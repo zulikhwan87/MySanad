@@ -1,0 +1,357 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
+import type { z } from 'zod';
+import { createServerSupabase } from '@/lib/supabase/server';
+import { getSessionProfile } from '@/lib/auth/session';
+import { consumeRateLimit } from '@/lib/rate-limit';
+import type { ActionResult } from '@/lib/validations/auth';
+import { IdSchema } from '@/lib/validations/teacher';
+import { NewSanadChainSchema, NodeChoiceSchema, SanadChainSchema, SanadEdgeSchema, SanadNodeSchema } from '@/lib/validations/sanad';
+
+type Result = ActionResult & { id?: string };
+
+interface Ctx {
+  supabase: SupabaseClient;
+  userId: string;
+  teacherId: string;
+}
+
+async function context(): Promise<Ctx | Result> {
+  const profile = await getSessionProfile();
+  if (!profile) return { ok: false, message: 'Sesi tamat. Sila log masuk semula.' };
+  if (!profile.is_active) return { ok: false, message: 'Akaun anda tidak aktif.' };
+  if (!(await consumeRateLimit('teacherWrite', `user:${profile.id}`))) {
+    return { ok: false, message: 'Terlalu banyak permintaan. Sila tunggu sebentar.' };
+  }
+  const supabase = createServerSupabase();
+  const { data, error } = await supabase.from('teachers').select('id').eq('profile_id', profile.id).maybeSingle();
+  if (error) return dbError(error);
+  if (!data) return { ok: false, message: 'Lengkapkan profil guru anda dahulu.' };
+  return { supabase, userId: profile.id, teacherId: data.id as string };
+}
+
+const isCtx = (v: Ctx | Result): v is Ctx => 'supabase' in v;
+
+function dbError(error: PostgrestError | { code?: string; message: string }): Result {
+  const code = 'code' in error ? error.code : undefined;
+  if (/row-level security/i.test(error.message)) return { ok: false, message: 'Anda tidak mempunyai kebenaran untuk tindakan ini.' };
+  if (['42501', '22023', 'P0002'].includes(code ?? '')) return { ok: false, message: error.message };
+  if (code === '23505') {
+    return { ok: false, message: /Semakan baharu/.test(error.message) ? error.message : 'Hubungan atau rekod yang sama sudah wujud.' };
+  }
+  if (code === '23514') return { ok: false, message: 'Data tidak memenuhi syarat (contoh: perawi tidak boleh meriwayatkan daripada dirinya sendiri).' };
+  if (code === '23503') return { ok: false, message: 'Rujukan yang dipilih tidak sah.' };
+  console.error('[sanad-actions]', code, error.message);
+  return { ok: false, message: 'Ralat pangkalan data. Sila cuba lagi.' };
+}
+
+function invalid(error: { flatten: () => { fieldErrors: Record<string, string[] | undefined> } }): Result {
+  return { ok: false, message: 'Sila semak medan yang bertanda.', fieldErrors: error.flatten().fieldErrors };
+}
+
+function refresh(chainId?: string) {
+  revalidatePath('/teacher/sanad');
+  if (chainId) revalidatePath(`/teacher/sanad/${chainId}`);
+}
+
+async function riwayatMatches(supabase: SupabaseClient, qiraatId: string, riwayatId: string) {
+  const { data } = await supabase.from('riwayat_types').select('id').eq('id', riwayatId).eq('qiraat_id', qiraatId).maybeSingle();
+  return Boolean(data);
+}
+
+function nodeRow(node: z.infer<typeof SanadNodeSchema>) {
+  return {
+    full_name_rumi: node.full_name_rumi,
+    full_name_arabic: node.full_name_arabic ?? '',
+    alternative_spellings: node.alternative_spellings,
+    historical_title: node.historical_title ?? null,
+    generation_category: node.generation_category,
+    birth_year_hijri: node.birth_year_hijri ?? null,
+    death_year_hijri: node.death_year_hijri ?? null,
+    birth_year_miladi: node.birth_year_miladi ?? null,
+    death_year_miladi: node.death_year_miladi ?? null,
+    country_or_region: node.country_or_region ?? null,
+    biography: node.biography ?? null,
+    scholarly_references: node.scholarly_references,
+  };
+}
+
+function edgeRow(edge: z.infer<typeof SanadEdgeSchema>) {
+  return {
+    transmission_relationship: edge.transmission_relationship,
+    riwayat_context: edge.riwayat_context ?? null,
+    transmission_date_text: edge.transmission_date_text ?? null,
+    transmission_location: edge.transmission_location ?? null,
+    sequence_order: edge.sequence_order,
+    supporting_evidence: edge.supporting_evidence ?? null,
+    notes: edge.notes ?? null,
+  };
+}
+
+/** Resolves an explicit choice: an existing node the teacher may use, or a brand-new node. */
+async function resolveNode(c: Ctx, choice: z.infer<typeof NodeChoiceSchema>): Promise<{ id: string; created: boolean } | Result> {
+  if (choice.mode === 'existing') return { id: choice.node_id, created: false };
+  const { data, error } = await c.supabase.from('sanad_nodes').insert(nodeRow(choice.node)).select('id').single();
+  if (error) return dbError(error);
+  return { id: data.id as string, created: true };
+}
+
+async function ownsChain(c: Ctx, chainId: string) {
+  const { data } = await c.supabase.from('sanad_chains').select('id').eq('id', chainId).eq('teacher_id', c.teacherId).maybeSingle();
+  return Boolean(data);
+}
+
+// ---------------------------------------------------------------------------
+
+/** Creates a draft chain with the teacher's direct shaykh linked to the teacher's own node. */
+export async function createSanadChainAction(raw: unknown): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  const parsed = NewSanadChainSchema.safeParse(raw);
+  if (!parsed.success) return invalid(parsed.error);
+  const { chain, shaykh, edge } = parsed.data;
+  if (!(await riwayatMatches(c.supabase, chain.qiraat_id, chain.riwayat_id))) {
+    return { ok: false, fieldErrors: { riwayat_id: ['Riwayat tidak sepadan dengan qiraat.'] } };
+  }
+
+  const self = await c.supabase.rpc('ensure_my_sanad_node');
+  if (self.error) return dbError(self.error);
+
+  const created = await c.supabase
+    .from('sanad_chains')
+    .insert({
+      teacher_id: c.teacherId,
+      title: chain.title,
+      qiraat_id: chain.qiraat_id,
+      riwayat_id: chain.riwayat_id,
+      tariq_id: chain.tariq_id ?? null,
+      transmission_method: chain.transmission_method,
+      ijazah_date: chain.ijazah_date ?? null,
+      ijazah_location: chain.ijazah_location ?? null,
+      public_notes: chain.public_notes ?? null,
+      allow_public_graph_export: chain.allow_public_graph_export,
+    })
+    .select('id')
+    .single();
+  if (created.error) return dbError(created.error);
+  const chainId = created.data.id as string;
+
+  // Multi-step over the API: remove the empty draft if linking the shaykh fails.
+  const rollback = async (res: Result) => {
+    await c.supabase.from('sanad_chains').delete().eq('id', chainId);
+    return res;
+  };
+  const node = await resolveNode(c, shaykh);
+  if ('ok' in node) return rollback(node);
+  const link = await c.supabase
+    .from('sanad_edges')
+    .insert({ sanad_chain_id: chainId, source_node_id: node.id, target_node_id: self.data as string, ...edgeRow(edge) });
+  if (link.error) {
+    if (node.created) await c.supabase.from('sanad_nodes').delete().eq('id', node.id);
+    return rollback(dbError(link.error));
+  }
+
+  refresh(chainId);
+  return { ok: true, message: 'Rantaian sanad dicipta sebagai draf.', id: chainId };
+}
+
+export async function updateSanadChainAction(chainId: string, raw: unknown): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  const parsed = SanadChainSchema.safeParse(raw);
+  if (!parsed.success) return invalid(parsed.error);
+  const v = parsed.data;
+  if (!(await riwayatMatches(c.supabase, v.qiraat_id, v.riwayat_id))) {
+    return { ok: false, fieldErrors: { riwayat_id: ['Riwayat tidak sepadan dengan qiraat.'] } };
+  }
+  const { data, error } = await c.supabase
+    .from('sanad_chains')
+    .update({
+      title: v.title,
+      qiraat_id: v.qiraat_id,
+      riwayat_id: v.riwayat_id,
+      tariq_id: v.tariq_id ?? null,
+      transmission_method: v.transmission_method,
+      ijazah_date: v.ijazah_date ?? null,
+      ijazah_location: v.ijazah_location ?? null,
+      public_notes: v.public_notes ?? null,
+      allow_public_graph_export: v.allow_public_graph_export,
+    })
+    .eq('id', chainId)
+    .eq('teacher_id', c.teacherId)
+    .select('id')
+    .maybeSingle();
+  if (error) return dbError(error);
+  if (!data) return { ok: false, message: 'Rantaian tidak ditemui.' };
+  refresh(chainId);
+  return { ok: true, message: 'Maklumat rantaian disimpan.' };
+}
+
+export async function deleteSanadChainAction(chainId: string): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  const { error, count } = await c.supabase.from('sanad_chains').delete({ count: 'exact' }).eq('id', chainId).eq('teacher_id', c.teacherId);
+  if (error) return dbError(error);
+  if (!count) return { ok: false, message: 'Rantaian tidak ditemui.' };
+  refresh();
+  return { ok: true, message: 'Rantaian draf dipadam.' };
+}
+
+/** Adds a shaykh above `studentNodeId`; several shaykhs for one student form branches. */
+export async function addShaykhAction(chainId: string, studentNodeId: string, choiceRaw: unknown, edgeRaw: unknown): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success || !IdSchema.safeParse(studentNodeId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  if (!(await ownsChain(c, chainId))) return { ok: false, message: 'Rantaian tidak ditemui.' };
+  const choice = NodeChoiceSchema.safeParse(choiceRaw);
+  if (!choice.success) return invalid(choice.error);
+  const edge = SanadEdgeSchema.safeParse(edgeRaw);
+  if (!edge.success) return invalid(edge.error);
+
+  const node = await resolveNode(c, choice.data);
+  if ('ok' in node) return node;
+  const { error } = await c.supabase
+    .from('sanad_edges')
+    .insert({ sanad_chain_id: chainId, source_node_id: node.id, target_node_id: studentNodeId, ...edgeRow(edge.data) });
+  if (error) {
+    if (node.created) await c.supabase.from('sanad_nodes').delete().eq('id', node.id);
+    return dbError(error);
+  }
+  refresh(chainId);
+  return { ok: true, message: 'Perawi ditambah.', id: node.id };
+}
+
+/** Links two nodes the teacher can already see (shared nodes / alternative routes). */
+export async function linkNodesAction(chainId: string, sourceId: string, targetId: string, edgeRaw: unknown): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (![chainId, sourceId, targetId].every((id) => IdSchema.safeParse(id).success)) return { ok: false, message: 'Rekod tidak sah.' };
+  if (sourceId === targetId) return { ok: false, message: 'Perawi tidak boleh meriwayatkan daripada dirinya sendiri.' };
+  if (!(await ownsChain(c, chainId))) return { ok: false, message: 'Rantaian tidak ditemui.' };
+  const edge = SanadEdgeSchema.safeParse(edgeRaw);
+  if (!edge.success) return invalid(edge.error);
+  const { error } = await c.supabase
+    .from('sanad_edges')
+    .insert({ sanad_chain_id: chainId, source_node_id: sourceId, target_node_id: targetId, ...edgeRow(edge.data) });
+  if (error) return dbError(error);
+  refresh(chainId);
+  return { ok: true, message: 'Hubungan ditambah.' };
+}
+
+export async function updateEdgeAction(chainId: string, edgeId: string, raw: unknown): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success || !IdSchema.safeParse(edgeId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  if (!(await ownsChain(c, chainId))) return { ok: false, message: 'Rantaian tidak ditemui.' };
+  const parsed = SanadEdgeSchema.safeParse(raw);
+  if (!parsed.success) return invalid(parsed.error);
+  const { data, error } = await c.supabase
+    .from('sanad_edges')
+    .update(edgeRow(parsed.data))
+    .eq('id', edgeId)
+    .eq('sanad_chain_id', chainId)
+    .select('id')
+    .maybeSingle();
+  if (error) return dbError(error);
+  if (!data) return { ok: false, message: 'Hubungan tidak ditemui.' };
+  refresh(chainId);
+  return { ok: true, message: 'Hubungan dikemas kini.' };
+}
+
+export async function deleteEdgeAction(chainId: string, edgeId: string): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success || !IdSchema.safeParse(edgeId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  if (!(await ownsChain(c, chainId))) return { ok: false, message: 'Rantaian tidak ditemui.' };
+  const { error, count } = await c.supabase.from('sanad_edges').delete({ count: 'exact' }).eq('id', edgeId).eq('sanad_chain_id', chainId);
+  if (error) return dbError(error);
+  if (!count) return { ok: false, message: 'Hubungan tidak ditemui.' };
+  refresh(chainId);
+  return { ok: true, message: 'Hubungan dipadam.' };
+}
+
+export async function updateNodeAction(chainId: string, nodeId: string, raw: unknown): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(nodeId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  const parsed = SanadNodeSchema.safeParse(raw);
+  if (!parsed.success) return invalid(parsed.error);
+  const { data, error } = await c.supabase
+    .from('sanad_nodes')
+    .update(nodeRow(parsed.data))
+    .eq('id', nodeId)
+    .eq('created_by', c.userId)
+    .select('id')
+    .maybeSingle();
+  if (error) return dbError(error);
+  if (!data) return { ok: false, message: 'Hanya perawi yang anda cipta dan belum disemak boleh disunting.' };
+  refresh(chainId);
+  return { ok: true, message: 'Maklumat perawi disimpan.' };
+}
+
+export interface LinkableNode {
+  id: string;
+  full_name_rumi: string;
+  full_name_arabic: string | null;
+  historical_title: string | null;
+  generation_category: string;
+  death_year_hijri: string | null;
+  country_or_region: string | null;
+  verification_status: string;
+  is_mine: boolean;
+}
+
+/** Candidates for an explicit link choice. Nothing is ever merged automatically. */
+export async function searchLinkableNodesAction(query: string): Promise<LinkableNode[]> {
+  if (typeof query !== 'string' || query.trim().length < 2) return [];
+  const profile = await getSessionProfile();
+  if (!profile) return [];
+  const { data, error } = await createServerSupabase().rpc('search_linkable_sanad_nodes', { p_query: query.slice(0, 100), p_limit: 10 });
+  if (error) {
+    console.error('[sanad-actions] search', error.message);
+    return [];
+  }
+  return ((data ?? []) as LinkableNode[]).map((n) => ({ ...n, full_name_arabic: n.full_name_arabic || null }));
+}
+
+export async function submitSanadChainAction(chainId: string, notes: string): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  const { error } = await c.supabase.rpc('submit_my_sanad_chain', {
+    p_chain_id: chainId,
+    p_notes: typeof notes === 'string' ? notes.slice(0, 1000) : null,
+  });
+  if (error) return dbError(error);
+  refresh(chainId);
+  revalidatePath('/teacher/verification');
+  return { ok: true, message: 'Rantaian sanad dihantar untuk semakan.' };
+}
+
+export async function withdrawSanadChainAction(chainId: string): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  const { error } = await c.supabase.rpc('withdraw_my_sanad_chain', { p_chain_id: chainId });
+  if (error) return dbError(error);
+  refresh(chainId);
+  return { ok: true, message: 'Rantaian ditarik balik dan boleh disunting semula.' };
+}
+
+export async function reviseSanadChainAction(chainId: string): Promise<Result> {
+  const c = await context();
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  const { data, error } = await c.supabase.rpc('revise_my_sanad_chain', { p_chain_id: chainId });
+  if (error) return dbError(error);
+  refresh();
+  return {
+    ok: true,
+    message: 'Draf semakan baharu dicipta. Versi yang diluluskan kekal dipaparkan sehingga semakan ini diluluskan.',
+    id: data as string,
+  };
+}

@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* MySanad palette: forest green, emerald, soft gold, white, light grey, pale green */
+    --background: 140 20% 98%;
+    --foreground: 150 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 150 30% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 30% 12%;
+    --primary: 150 40% 21%;          /* forest green #225339 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 140 30% 94%;        /* pale green */
+    --secondary-foreground: 150 40% 21%;
+    --muted: 140 10% 95%;            /* light grey */
+    --muted-foreground: 150 8% 38%;
+    --accent: 41 54% 50%;            /* soft gold #c4973a */
+    --accent-foreground: 150 40% 12%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 140 12% 88%;
+    --input: 140 12% 84%;
+    --ring: 160 84% 30%;             /* emerald */
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Arabic content always renders right-to-left with an Arabic font. */
+  [lang='ar'],
+  .arabic {
+    font-family: var(--font-arabic), var(--font-amiri), serif;
+    direction: rtl;
+    unicode-bidi: isolate;
+  }
+}
+
+@layer utilities {
+  .pattern-forest {
+    background-color: #183727;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(212, 174, 82, 0.18) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
