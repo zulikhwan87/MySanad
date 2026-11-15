@@ -11,14 +11,20 @@ export const GENERATION_CATEGORIES = [
   'Guru Nusantara / Semasa',
 ] as const;
 
+/** All sanad al-Quran are received by talaqqi musyafahah; these are the ways the reading is done. */
 export const TRANSMISSION_RELATIONSHIPS = [
-  'Talaqqi wa al-Ardh',
-  "Talaqqi Musyafahah Khatam 30 Juzuk",
-  "Sama'",
-  'Qiraah sebahagian dengan ijazah penuh',
-  'Ijazah am',
-  'Lain-lain',
+  'Bacaan secara hafazan (ghaiban)',
+  'Bacaan secara melihat mushaf',
+  'Bacaan secara dalam talian (online)',
 ] as const;
+export const DEFAULT_TRANSMISSION = TRANSMISSION_RELATIONSHIPS[0];
+
+/** The two options, plus an older stored value (if any) so editing an old record does not blank it. */
+export function transmissionOptions(current?: unknown) {
+  const list: string[] = [...TRANSMISSION_RELATIONSHIPS];
+  if (typeof current === 'string' && current && !list.includes(current)) list.push(current);
+  return list.map((v) => ({ value: v, label: v }));
+}
 
 const ARABIC = /[؀-ۿ]/;
 
@@ -50,7 +56,10 @@ export const SanadNodeSchema = z
     full_name_arabic: text(255).refine((v) => !v || ARABIC.test(v), 'Gunakan tulisan Arab.'),
     alternative_spellings: list(10, 120),
     historical_title: text(200),
-    generation_category: z.enum(GENERATION_CATEGORIES, { errorMap: () => ({ message: 'Pilih kategori generasi.' }) }),
+    generation_category: z.preprocess(
+      (v) => (v === '' || v === null ? undefined : v),
+      z.enum(GENERATION_CATEGORIES, { errorMap: () => ({ message: 'Kategori tidak sah.' }) }).optional(),
+    ),
     birth_year_hijri: text(30),
     death_year_hijri: text(30),
     birth_year_miladi: optionalYear,

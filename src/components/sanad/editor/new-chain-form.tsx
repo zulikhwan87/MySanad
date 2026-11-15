@@ -10,7 +10,7 @@ import { ChainFields } from './chain-fields';
 import { NodePicker } from './node-picker';
 import { EdgeFields, EMPTY_EDGE } from './edge-fields';
 import { createSanadChainAction } from '@/lib/actions/sanad-actions';
-import { NewSanadChainSchema, type NodeChoiceInput, type SanadChainInput, type SanadEdgeInput } from '@/lib/validations/sanad';
+import { DEFAULT_TRANSMISSION, NewSanadChainSchema, type NodeChoiceInput, type SanadChainInput, type SanadEdgeInput } from '@/lib/validations/sanad';
 import { issuesByPath } from '@/lib/validations/issues';
 import type { TeacherReferenceData } from '@/types/teacher';
 
@@ -31,14 +31,14 @@ export function NewChainForm({
     qiraat_id: '',
     riwayat_id: '',
     tariq_id: '',
-    transmission_method: 'Talaqqi Musyafahah Khatam 30 Juzuk',
+    transmission_method: DEFAULT_TRANSMISSION,
     ijazah_date: '',
     ijazah_location: '',
     public_notes: '',
     allow_public_graph_export: false,
   });
   const [shaykh, setShaykh] = useState<NodeChoiceInput>({ mode: 'existing', node_id: '' });
-  const [edge, setEdge] = useState<SanadEdgeInput>({ ...EMPTY_EDGE, transmission_relationship: 'Talaqqi Musyafahah Khatam 30 Juzuk' });
+  const [edge, setEdge] = useState<SanadEdgeInput>({ ...EMPTY_EDGE });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

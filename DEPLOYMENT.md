@@ -42,6 +42,7 @@ npm run test:e2e               # ujian E2E desktop + mudah alih (memulakan `next
 | `011_settings_analytics_reference.sql` | tetapan, analitik, data rujukan |
 | `012_public_sanad_documents_qiraat.sql` | paparan awam sijil sanad, statistik qiraat & riwayat |
 | `013_admin_managed_teachers.sql` | guru diurus pentadbir, suntingan pentadbir, pautan akaun |
+| `014_qiraat_additions_simple_sanad.sql` | qiraat Abu Ja'far, Ya'qub, Khalaf, Qiraat Tujuh; riwayat tambahan; perawi nama sahaja; kaedah pengambilan |
 
 Pilihan A — Supabase CLI:
 ```bash

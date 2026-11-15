@@ -8,7 +8,7 @@ export const EMPTY_NODE: SanadNodeInput = {
   full_name_arabic: '',
   alternative_spellings: '',
   historical_title: '',
-  generation_category: 'Masyaikh Mutaakhirin',
+  generation_category: '',
   birth_year_hijri: '',
   death_year_hijri: '',
   birth_year_miladi: '',
@@ -24,12 +24,15 @@ export function NodeFields({
   errors,
   prefix,
   compact = false,
+  detailed = false,
 }: {
   value: SanadNodeInput;
   onChange: (v: SanadNodeInput) => void;
   errors: Record<string, string>;
   prefix: string;
   compact?: boolean;
+  /** Category and title fields: only for the administrators' reference list. Teachers enter names only. */
+  detailed?: boolean;
 }) {
   const set = (key: keyof SanadNodeInput) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     onChange({ ...value, [key]: e.target.value });
@@ -40,16 +43,19 @@ export function NodeFields({
     <div className="grid gap-3 sm:grid-cols-2">
       <TextField id={`${prefix}rumi`} label="Nama (Rumi)" required value={str(value.full_name_rumi)} onChange={set('full_name_rumi')} error={err('full_name_rumi')} />
       <TextField id={`${prefix}arab`} label="Nama (Arab)" dir="rtl" lang="ar" value={str(value.full_name_arabic)} onChange={set('full_name_arabic')} error={err('full_name_arabic')} />
-      <SelectField
-        id={`${prefix}cat`}
-        label="Kategori generasi"
-        required
-        options={GENERATION_CATEGORIES.map((c) => ({ value: c, label: c }))}
-        value={str(value.generation_category)}
-        onChange={set('generation_category')}
-        error={err('generation_category')}
-      />
-      <TextField id={`${prefix}title`} label="Gelaran" value={str(value.historical_title)} onChange={set('historical_title')} error={err('historical_title')} />
+      {detailed ? (
+        <>
+          <SelectField
+            id={`${prefix}cat`}
+            label="Kategori generasi"
+            options={GENERATION_CATEGORIES.map((c) => ({ value: c, label: c }))}
+            value={str(value.generation_category)}
+            onChange={set('generation_category')}
+            error={err('generation_category')}
+          />
+          <TextField id={`${prefix}title`} label="Gelaran" value={str(value.historical_title)} onChange={set('historical_title')} error={err('historical_title')} />
+        </>
+      ) : null}
       <TextField id={`${prefix}alt`} label="Ejaan alternatif" hint="Pisahkan dengan koma." value={str(value.alternative_spellings)} onChange={set('alternative_spellings')} />
       <TextField id={`${prefix}region`} label="Negara / wilayah" value={str(value.country_or_region)} onChange={set('country_or_region')} />
       {compact ? null : (

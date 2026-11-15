@@ -9,7 +9,7 @@ import {
   type SanadGraphData,
 } from '@/lib/sanad/graph';
 import { normalizeSearchText } from '@/lib/text/normalize';
-import { NewSanadChainSchema, NodeChoiceSchema, SanadNodeSchema } from '@/lib/validations/sanad';
+import { NewSanadChainSchema, NodeChoiceSchema, SanadNodeSchema, transmissionOptions } from '@/lib/validations/sanad';
 
 const UUID = '11111111-1111-4111-8111-111111111111';
 
@@ -128,6 +128,9 @@ describe('sanad schemas', () => {
     expect(SanadNodeSchema.safeParse({ full_name_rumi: 'S', generation_category: 'Masyaikh Mutaakhirin' }).success).toBe(false);
     expect(SanadNodeSchema.safeParse({ full_name_rumi: 'Syeikh', full_name_arabic: 'Latin', generation_category: 'Perawi' }).success).toBe(false);
     expect(SanadNodeSchema.safeParse({ full_name_rumi: 'Syeikh', generation_category: 'Malaikat' }).success).toBe(false);
+    // Teachers enter names only: the category is optional.
+    const nameOnly = SanadNodeSchema.safeParse({ full_name_rumi: 'Syeikh Nama Sahaja', generation_category: '' });
+    expect(nameOnly.success && nameOnly.data.generation_category).toBe(undefined);
     const refs = SanadNodeSchema.parse({
       full_name_rumi: 'Syeikh',
       generation_category: 'Perawi',
@@ -155,5 +158,15 @@ describe('sanad schemas', () => {
       edge: { transmission_relationship: 'Talaqqi wa al-Ardh' },
     });
     expect(future.success).toBe(false);
+  });
+
+  it('offers the two reading methods, keeping an older stored value visible', () => {
+    expect(transmissionOptions().map((o) => o.value)).toEqual([
+      'Bacaan secara hafazan (ghaiban)',
+      'Bacaan secara melihat mushaf',
+      'Bacaan secara dalam talian (online)',
+    ]);
+    expect(transmissionOptions('Talaqqi Musyafahah Khatam 30 Juzuk')).toHaveLength(4);
+    expect(transmissionOptions('Bacaan secara melihat mushaf')).toHaveLength(3);
   });
 });

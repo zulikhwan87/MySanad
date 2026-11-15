@@ -15,6 +15,16 @@ function formatDate(iso: string | null, intl: string) {
   return iso ? new Date(iso).toLocaleDateString(intl, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 }
 
+/** Words such as "al-Quran" never break at the hyphen. */
+function KeepHyphenated({ text }: { text: string }) {
+  return text.split(' ').map((word, i) => (
+    <span key={i}>
+      {i > 0 ? ' ' : null}
+      {word.includes('-') ? <span className="whitespace-nowrap">{word}</span> : word}
+    </span>
+  ));
+}
+
 export default async function HomePage() {
   const [stats, featured, recent] = await Promise.all([
     getPlatformStats(),
@@ -27,27 +37,33 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="pattern-forest text-white">
-        <FadeIn className="container grid gap-8 py-14 md:py-20">
-          <div className="max-w-3xl space-y-4">
-            <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-              {t.home.heroTitle}
-            </h1>
-            <p lang="ar" className="arabic text-xl text-gold-200 sm:text-2xl">
+      <section className="pattern-forest relative isolate overflow-hidden text-white">
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-[-12rem] h-[32rem] w-[56rem] -translate-x-1/2 rounded-full bg-gold-400/10 blur-3xl" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-black/20" />
+        </div>
+        <FadeIn className="container flex flex-col items-center py-20 text-center md:py-28">
+          <div className="flex items-center gap-4 text-gold-200">
+            <span aria-hidden className="hidden h-px w-12 bg-gradient-to-r from-transparent to-gold-300/70 sm:block" />
+            <p lang="ar" dir="rtl" className="arabic text-xl sm:text-2xl">
               خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ
             </p>
-            <p className="max-w-2xl text-base text-forest-100 sm:text-lg">
-              {t.home.heroSubtitle}
-            </p>
+            <span aria-hidden className="hidden h-px w-12 bg-gradient-to-l from-transparent to-gold-300/70 sm:block" />
           </div>
-          <div className="max-w-2xl rounded-2xl bg-white/10 p-3 backdrop-blur [&_input]:text-foreground">
+          <h1 className="mt-6 max-w-4xl text-balance text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
+            <KeepHyphenated text={t.home.heroTitle} />
+          </h1>
+          <p className="mt-6 max-w-2xl text-pretty text-base leading-relaxed text-forest-100/90 sm:text-lg">
+            {t.home.heroSubtitle}
+          </p>
+          <div className="mt-10 w-full max-w-2xl rounded-2xl bg-white p-2 text-left shadow-2xl shadow-black/30 ring-1 ring-white/20 [&_input]:border-0 [&_input]:text-foreground [&_input]:shadow-none">
             <SearchBox size="lg" />
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild variant="accent">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Button asChild variant="accent" size="lg">
               <Link href="/register">{t.home.register}</Link>
             </Button>
-            <Button asChild variant="outline" className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white">
+            <Button asChild variant="outline" size="lg" className="border-white/30 bg-white/5 text-white hover:bg-white/10 hover:text-white">
               <Link href="/directory">{t.home.viewDirectory}</Link>
             </Button>
           </div>

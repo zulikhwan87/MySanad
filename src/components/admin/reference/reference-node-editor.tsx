@@ -57,7 +57,7 @@ export function ReferenceNodeEditor({ initial }: { initial?: { id: string; canon
         rujukan disemak dengan sumber ilmiah.
       </Alert>
       <TextField id="ref-code" label="Kod rujukan" required hint="Contoh: IMAM-ASIM" value={code} onChange={(e) => setCode(e.target.value)} error={errors.canonical_code} />
-      <NodeFields value={node} onChange={setNode} errors={errors} prefix="node." />
+      <NodeFields value={node} onChange={setNode} errors={errors} prefix="node." detailed />
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
           Batal

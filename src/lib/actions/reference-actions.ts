@@ -110,7 +110,7 @@ export async function saveReferenceNodeAction(raw: unknown): Promise<ActionResul
     full_name_arabic: n.full_name_arabic ?? '',
     alternative_spellings: n.alternative_spellings,
     historical_title: n.historical_title ?? null,
-    generation_category: n.generation_category,
+    generation_category: n.generation_category ?? null,
     birth_year_hijri: n.birth_year_hijri ?? null,
     death_year_hijri: n.death_year_hijri ?? null,
     birth_year_miladi: n.birth_year_miladi ?? null,

@@ -89,7 +89,7 @@ function nodeRow(node: z.infer<typeof SanadNodeSchema>) {
     full_name_arabic: node.full_name_arabic ?? '',
     alternative_spellings: node.alternative_spellings,
     historical_title: node.historical_title ?? null,
-    generation_category: node.generation_category,
+    generation_category: node.generation_category ?? null,
     birth_year_hijri: node.birth_year_hijri ?? null,
     death_year_hijri: node.death_year_hijri ?? null,
     birth_year_miladi: node.birth_year_miladi ?? null,
@@ -320,7 +320,7 @@ export interface LinkableNode {
   full_name_rumi: string;
   full_name_arabic: string | null;
   historical_title: string | null;
-  generation_category: string;
+  generation_category: string | null;
   death_year_hijri: string | null;
   country_or_region: string | null;
   verification_status: string;

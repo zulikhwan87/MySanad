@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckboxField, SelectField, TextareaField, TextField } from '@/components/forms/fields';
-import { TRANSMISSION_RELATIONSHIPS, type SanadChainInput } from '@/lib/validations/sanad';
+import { transmissionOptions, type SanadChainInput } from '@/lib/validations/sanad';
 import type { TeacherReferenceData } from '@/types/teacher';
 
 export function ChainFields({
@@ -46,7 +46,7 @@ export function ChainFields({
         id="c-method"
         label="Kaedah pengambilan anda"
         required
-        options={TRANSMISSION_RELATIONSHIPS.map((r) => ({ value: r, label: r }))}
+        options={transmissionOptions(value.transmission_method)}
         value={str(value.transmission_method)}
         onChange={set('transmission_method')}
         error={err('transmission_method')}

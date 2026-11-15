@@ -146,3 +146,13 @@ erDiagram
 - `notify_teacher` melangkau guru tanpa akaun. `notify_admin_edit` (pencetus) + `record_admin_edit`: notifikasi
   `profile_updated_by_admin` kepada guru berakaun apabila pentadbir menyunting terus (sekali setiap 30 minit).
 - `admin_link_teacher_account(teacher_id, email)`: pautkan profil diurus kepada akaun berdaftar (notifikasi `account_linked`).
+
+## Migrasi 014 — Qiraat tambahan, sanad ringkas
+- Qiraat baharu: `Q08-ABUJAFAR` (Ibn Wardan, Ibn Jammaz), `Q09-YAQUB` (Ruwais, Rauh), `Q10-KHALAF` (Ishaq, Idris),
+  dan `Q-SABAH` Qiraat Tujuh (riwayat `R-JAM-SABAH`), disusun sebelum Qiraat Sepuluh Mutawatirah.
+- Riwayat tambahan: Ibn 'Amir (Hisyam, Ibn Zakwan), Hamzah (Khalaf, Khallad), al-Kisa'i (Abu al-Harith, Duri al-Kisa'i).
+  Kini setiap imam qiraat sepuluh mempunyai dua perawi.
+- Riwayat Qiraat Sepuluh: Jam'ul Qiraat al-'Asyar, diikuti `R-JAM-ASHARAH-SUGHRA` dan `R-JAM-ASHARAH-KUBRA`.
+- `sanad_nodes.generation_category` kini boleh NULL: guru hanya memasukkan nama perawi.
+- Kaedah pengambilan (semua secara talaqqi musyafahah): bacaan secara hafazan (ghaiban, lalai), melihat mushaf,
+  atau dalam talian (online). Nilai lama dikekalkan sehingga disunting.

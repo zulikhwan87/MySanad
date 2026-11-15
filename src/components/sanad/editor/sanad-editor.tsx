@@ -17,7 +17,7 @@ import {
   updateEdgeAction,
   updateNodeAction,
 } from '@/lib/actions/sanad-actions';
-import { NodeChoiceSchema, SanadEdgeSchema, SanadNodeSchema, type NodeChoiceInput, type SanadEdgeInput, type SanadNodeInput } from '@/lib/validations/sanad';
+import { DEFAULT_TRANSMISSION, NodeChoiceSchema, SanadEdgeSchema, SanadNodeSchema, type NodeChoiceInput, type SanadEdgeInput, type SanadNodeInput } from '@/lib/validations/sanad';
 import { issuesByPath } from '@/lib/validations/issues';
 import type { ActionResult } from '@/lib/validations/auth';
 import type { GraphEdgeData, GraphNodeData, SanadGraphData } from '@/lib/sanad/graph';
@@ -35,7 +35,7 @@ function nodeToInput(n: GraphNodeData): SanadNodeInput {
     full_name_arabic: n.full_name_arabic ?? '',
     alternative_spellings: (n.alternative_spellings ?? []).join(', '),
     historical_title: n.historical_title ?? '',
-    generation_category: (n.generation_category as SanadNodeInput['generation_category']) ?? 'Masyaikh Mutaakhirin',
+    generation_category: (n.generation_category as SanadNodeInput['generation_category']) ?? '',
     birth_year_hijri: n.birth_year_hijri ?? '',
     death_year_hijri: n.death_year_hijri ?? '',
     birth_year_miladi: n.birth_year_miladi ?? '',
@@ -48,7 +48,7 @@ function nodeToInput(n: GraphNodeData): SanadNodeInput {
 
 function edgeToInput(e: GraphEdgeData): SanadEdgeInput {
   return {
-    transmission_relationship: e.transmission_relationship ?? 'Talaqqi wa al-Ardh',
+    transmission_relationship: e.transmission_relationship ?? DEFAULT_TRANSMISSION,
     riwayat_context: e.riwayat_context ?? '',
     transmission_date_text: e.transmission_date_text ?? '',
     transmission_location: e.transmission_location ?? '',
