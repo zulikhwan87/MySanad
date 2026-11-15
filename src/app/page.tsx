@@ -1,15 +1,12 @@
 import Link from 'next/link';
-import { BookOpenCheck, FileLock2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FadeIn, StaggerItem, StaggerList } from '@/components/motion/motion';
 import { SearchBox } from '@/components/public/search-box';
-import { StateGrid } from '@/components/public/state-grid';
 import { StatsRow } from '@/components/public/stats-row';
 import { TeacherGrid } from '@/components/public/teacher-grid';
 import { DemoBadge } from '@/components/public/verification-badges';
 import { NotConfigured } from '@/components/public/states';
-import { getFeaturedTeachers, getPlatformStats, getRecentTeachers, getStateStats } from '@/lib/data/public-directory';
+import { getFeaturedTeachers, getPlatformStats, getRecentTeachers } from '@/lib/data/public-directory';
 import { getLocale } from '@/lib/i18n/server';
 import { getDictionary } from '@/lib/i18n/dictionaries';
 import { intlLocale } from '@/lib/i18n/config';
@@ -19,20 +16,14 @@ function formatDate(iso: string | null, intl: string) {
 }
 
 export default async function HomePage() {
-  const [stats, states, featured, recent] = await Promise.all([
+  const [stats, featured, recent] = await Promise.all([
     getPlatformStats(),
-    getStateStats(),
     getFeaturedTeachers(6),
     getRecentTeachers(6),
   ]);
   const locale = getLocale();
   const t = getDictionary(locale);
   const intl = intlLocale(locale);
-  const PRINCIPLES = [
-    { icon: BookOpenCheck, title: t.home.p1Title, body: t.home.p1Body },
-    { icon: ShieldCheck, title: t.home.p2Title, body: t.home.p2Body },
-    { icon: FileLock2, title: t.home.p3Title, body: t.home.p3Body },
-  ];
 
   return (
     <>
@@ -71,16 +62,6 @@ export default async function HomePage() {
           {stats ? <StatsRow stats={stats} /> : <NotConfigured />}
         </section>
 
-        <section aria-labelledby="negeri" className="space-y-4">
-          <div>
-            <h2 id="negeri" className="text-xl font-semibold text-forest-900">
-              {t.home.byState}
-            </h2>
-            <p className="text-sm text-muted-foreground">{t.home.byStateDesc}</p>
-          </div>
-          {states ? <StateGrid states={states} /> : <NotConfigured />}
-        </section>
-
         {featured && featured.length > 0 ? (
           <section aria-labelledby="pilihan" className="space-y-4">
             <h2 id="pilihan" className="text-xl font-semibold text-forest-900">
@@ -116,26 +97,14 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        <section aria-labelledby="tentang" className="space-y-4">
-          <h2 id="tentang" className="text-xl font-semibold text-forest-900">
-            {t.home.whatIs}
+        <section aria-labelledby="sertai" className="rounded-2xl border bg-secondary/50 px-6 py-10 text-center">
+          <h2 id="sertai" className="text-2xl font-semibold text-forest-900">
+            {t.home.joinTitle}
           </h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            {PRINCIPLES.map(({ icon: Icon, title, body }) => (
-              <Card key={title}>
-                <CardHeader>
-                  <Icon className="size-6 text-emerald-600" aria-hidden />
-                  <CardTitle className="text-lg">{title}</CardTitle>
-                  <CardDescription>{body}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-          <p className="text-sm">
-            <Link href="/about" className="font-medium text-primary underline-offset-4 hover:underline">
-              {t.home.learnMore}
-            </Link>
-          </p>
+          <p className="mx-auto mt-2 max-w-xl text-muted-foreground">{t.home.joinBody}</p>
+          <Button asChild variant="accent" className="mt-6">
+            <Link href="/register">{t.home.register}</Link>
+          </Button>
         </section>
       </div>
     </>

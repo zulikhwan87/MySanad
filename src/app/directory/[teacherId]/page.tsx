@@ -8,8 +8,7 @@ import { TeacherAvatar } from '@/components/public/teacher-avatar';
 import { DemoBadge, VerificationBadges } from '@/components/public/verification-badges';
 import { NotConfigured } from '@/components/public/states';
 import { ProfileTabs } from '@/components/profile/profile-tabs';
-import { getTeacherProfile } from '@/lib/data/public-directory';
-import { getPublicSanadGraph } from '@/lib/data/sanad';
+import { getPublicSanadDocuments, getTeacherProfile } from '@/lib/data/public-directory';
 import { UuidSchema } from '@/lib/validations/search';
 import { getT } from '@/lib/i18n/server';
 
@@ -45,7 +44,7 @@ export default async function TeacherProfilePage({ params }: Props) {
   }
   const { teacher } = data;
   const t = getT();
-  const graph = data.settings.show_sanad_graph && data.sanad_chains.length ? await getPublicSanadGraph({ teacherId: teacher.id }) : null;
+  const documents = await getPublicSanadDocuments(teacher.id);
   const location = [teacher.district_name, teacher.state_name].filter(Boolean).join(', ');
 
   return (
@@ -105,7 +104,7 @@ export default async function TeacherProfilePage({ params }: Props) {
       </FadeIn>
 
       <div className="mt-6">
-        <ProfileTabs data={data} graph={graph} />
+        <ProfileTabs data={data} documents={documents} />
       </div>
 
       <aside className="mt-4 flex gap-3 rounded-xl border border-forest-200 bg-forest-50 p-4 text-sm text-forest-800">

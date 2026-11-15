@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Eye, FileText, Image as ImageIcon, Loader2, Trash2 } from 'lucide-react';
+import { Download, Eye, EyeOff, FileText, Globe, Image as ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/teacher/status-badge';
-import { deleteDocumentAction } from '@/lib/actions/document-actions';
+import { deleteDocumentAction, setDocumentPublicAction } from '@/lib/actions/document-actions';
 import { formatBytes } from '@/lib/files/document-signature';
 import type { ActionResult } from '@/lib/validations/auth';
 import type { VerificationStatus } from '@/types/mysanad';
@@ -20,6 +20,7 @@ export interface DocumentRow {
   review_status: VerificationStatus;
   review_notes: string | null;
   uploaded_at: string;
+  show_publicly?: boolean;
   link: string | null;
 }
 
@@ -59,6 +60,20 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
     });
   }
 
+  function togglePublic(d: DocumentRow) {
+    const show = !d.show_publicly;
+    if (show && (d.review_status === 'approved' || d.review_status === 'published')) {
+      if (!window.confirm('Sijil ini akan disemak semula oleh pentadbir sebelum dipaparkan kepada awam. Teruskan?')) return;
+    }
+    setBusy(`${d.id}:public`);
+    startTransition(async () => {
+      const res = await setDocumentPublicAction(d.id, show);
+      setBusy(null);
+      setResult(res);
+      if (res.ok) router.refresh();
+    });
+  }
+
   if (documents.length === 0) return <p className="text-sm text-muted-foreground">Belum ada dokumen dimuat naik.</p>;
 
   return (
@@ -81,6 +96,14 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
                     {d.link ? ` · ${d.link}` : ''}
                   </p>
                   {d.review_notes ? <p className="mt-1 text-sm">Ulasan pentadbir: {d.review_notes}</p> : null}
+                  {d.show_publicly ? (
+                    <p className="mt-1 flex items-center gap-1 text-xs font-medium text-emerald-700">
+                      <Globe className="size-3.5" aria-hidden />
+                      {d.review_status === 'approved' || d.review_status === 'published'
+                        ? 'Dipaparkan pada profil awam'
+                        : 'Akan dipaparkan pada profil awam selepas diluluskan'}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-1">
@@ -91,6 +114,18 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
                 <Button variant="ghost" size="icon" aria-label={`Muat turun ${d.original_filename}`} disabled={busy !== null} onClick={() => void view(d.id, true)}>
                   {busy === `${d.id}:true` ? <Loader2 className="animate-spin" aria-hidden /> : <Download aria-hidden />}
                 </Button>
+                {d.category === 'Sijil Ijazah Sanad' && d.review_status !== 'rejected' && d.review_status !== 'suspended' ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={() => togglePublic(d)}
+                    aria-label={d.show_publicly ? `Sembunyikan ${d.original_filename} daripada profil awam` : `Paparkan ${d.original_filename} pada profil awam`}
+                  >
+                    {busy === `${d.id}:public` ? <Loader2 className="animate-spin" aria-hidden /> : d.show_publicly ? <EyeOff aria-hidden /> : <Globe aria-hidden />}
+                    {d.show_publicly ? 'Sembunyikan' : 'Paparkan awam'}
+                  </Button>
+                ) : null}
                 {DELETABLE.includes(d.review_status) ? (
                   <Button variant="ghost" size="icon" aria-label={`Padam ${d.original_filename}`} disabled={busy !== null} onClick={() => remove(d)}>
                     {busy === `${d.id}:delete` ? <Loader2 className="animate-spin" aria-hidden /> : <Trash2 aria-hidden />}

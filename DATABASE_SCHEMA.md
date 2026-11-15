@@ -121,3 +121,16 @@ erDiagram
 - `max_documents_per_teacher()` kini membaca tetapan.
 - Audit untuk `malaysian_districts`, `qiraat_types`, `riwayat_types`, `tariq_types`, `system_settings`; semakan format kod/slug; kod unik untuk perawi rujukan (`sanad_nodes.canonical_code`).
 - `admin_analytics()`: 12 bulan pendaftaran/penerbitan/keputusan, status guru, guru mengikut negeri, rantaian mengikut riwayat, status dokumen, masa semakan (median/P90), institusi teratas.
+
+## Migrasi 012 — Paparan awam sijil sanad, Qiraat & Riwayat
+- `documents.show_publicly` (lalai `FALSE`): guru meminta Sijil Ijazah Sanad dipaparkan pada profil awam.
+- Sijil dipaparkan hanya jika guru meminta, pentadbir meluluskan (`approved`/`published`) dan profil guru awam
+  (`is_public_sanad_document`). Bucket kekal peribadi.
+- `register_my_document(..., p_show_publicly)` — parameter baharu (lalai `FALSE`); hanya kategori Sijil Ijazah Sanad.
+- `set_my_document_public(id, show)` — guru: sembunyi serta-merta; paparkan sijil yang sudah lulus menghantarnya untuk
+  semakan semula (status `submitted` + permohonan baharu).
+- `get_public_sanad_documents(teacher_id)` — awam: id, jenis fail, rantaian awam berkaitan, tarikh semakan (tiada nama fail
+  atau laluan storan).
+- `public_sanad_document_path(id)` — service role sahaja; digunakan oleh `/api/public-documents/{id}`.
+- `public_qiraat_riwayat_stats()` — awam: bilangan guru diterbitkan bagi setiap qiraat dan riwayat (peraturan sama dengan
+  tapisan direktori).

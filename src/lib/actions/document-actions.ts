@@ -68,6 +68,7 @@ export async function registerDocumentAction(raw: unknown): Promise<Result> {
     p_sanad_chain_id: v.sanad_chain_id ?? null,
     p_ijazah_record_id: v.ijazah_record_id ?? null,
     p_notes: v.notes ?? null,
+    p_show_publicly: v.show_publicly,
   });
   if (error) return discard(dbMessage(error));
 
@@ -92,4 +93,27 @@ export async function deleteDocumentAction(documentId: string): Promise<Result> 
   }
   revalidatePath('/teacher/documents');
   return { ok: true, message: 'Dokumen dipadam.' };
+}
+
+/** Show or hide a sanad certificate on the public profile. Showing an approved one sends it back for review. */
+export async function setDocumentPublicAction(documentId: string, show: boolean): Promise<Result> {
+  const profile = await getSessionProfile();
+  if (!profile?.is_active) return { ok: false, message: 'Sesi tamat. Sila log masuk semula.' };
+  if (!IdSchema.safeParse(documentId).success || typeof show !== 'boolean') return { ok: false, message: 'Rekod tidak sah.' };
+  if (!(await consumeRateLimit('teacherWrite', `user:${profile.id}`))) {
+    return { ok: false, message: 'Terlalu banyak permintaan. Sila tunggu sebentar.' };
+  }
+  const supabase = createServerSupabase();
+  const { data: status, error } = await supabase.rpc('set_my_document_public', { p_document_id: documentId, p_show: show });
+  if (error) return { ok: false, message: dbMessage(error) };
+  revalidatePath('/teacher/documents');
+  revalidatePath('/teacher/verification');
+  if (!show) return { ok: true, message: 'Sijil tidak lagi dipaparkan pada profil awam.' };
+  return {
+    ok: true,
+    message:
+      status === 'submitted' || status === 'under_review'
+        ? 'Permohonan paparan awam dihantar. Sijil akan dipaparkan selepas disemak oleh pentadbir.'
+        : 'Sijil akan dipaparkan pada profil awam.',
+  };
 }

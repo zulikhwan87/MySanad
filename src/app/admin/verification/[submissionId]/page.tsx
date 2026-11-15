@@ -59,6 +59,13 @@ export default async function SubmissionReviewPage({ params }: { params: { submi
                 <p className="text-muted-foreground">
                   {detail.document.category} · {detail.document.mime_type} · {formatBytes(detail.document.file_size_bytes)} · {fmtDate(detail.document.uploaded_at)}
                 </p>
+                {detail.document.show_publicly ? (
+                  <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-900">
+                    <strong>Guru meminta sijil ini dipaparkan pada profil awam.</strong> Jika diluluskan, pelawat boleh membukanya
+                    melalui butang &quot;Papar sanad&quot;. Pastikan tiada No. MyKad, alamat atau maklumat peribadi lain sebelum
+                    meluluskan; jika ada, minta pembetulan.
+                  </p>
+                ) : null}
                 {detail.document.ijazah ? (
                   <p>
                     Dikaitkan dengan ijazah: {detail.document.ijazah.ijazah_title} ({detail.document.ijazah.granting_sheikh_rumi})

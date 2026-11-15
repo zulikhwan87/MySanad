@@ -47,7 +47,7 @@ src/lib/data/            Bacaan data pelayan (sesi pengguna atau klien awam tanp
 src/lib/validations/     Skema Zod
 src/lib/i18n/            Kamus BM/EN/AR, penukar bahasa
 src/lib/sanad/           Susun atur dan utiliti graf
-supabase/migrations/     001–011 (skema, RLS, fungsi, data rujukan)
+supabase/migrations/     001–012 (skema, RLS, fungsi, data rujukan)
 tests/unit, components   Vitest (jsdom untuk komponen)
 tests/db                 Ujian RLS & fungsi pada PGlite
 tests/e2e                Playwright

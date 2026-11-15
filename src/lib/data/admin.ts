@@ -264,6 +264,7 @@ export interface SubmissionDetail {
     file_size_bytes: number;
     review_status: VerificationStatus;
     uploaded_at: string;
+    show_publicly: boolean;
     ijazah: { ijazah_title: string; granting_sheikh_rumi: string } | null;
     chain: { id: string; title: string } | null;
   } | null;
@@ -298,7 +299,7 @@ export async function getSubmissionDetail(submissionId: string): Promise<Submiss
   if (submission.target_type === 'ijazah_document') {
     const { data: doc, error: docError } = await s
       .from('documents')
-      .select('id, category, original_filename, mime_type, file_size_bytes, review_status, uploaded_at, ijazah:ijazah_records(ijazah_title, granting_sheikh_rumi), chain:sanad_chains(id, title)')
+      .select('id, category, original_filename, mime_type, file_size_bytes, review_status, uploaded_at, show_publicly, ijazah:ijazah_records(ijazah_title, granting_sheikh_rumi), chain:sanad_chains(id, title)')
       .eq('id', submission.target_record_id)
       .maybeSingle();
     if (docError) fail('document', docError);

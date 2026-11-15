@@ -7,6 +7,8 @@ import type {
   Paginated,
   PlatformStats,
   PublicInstitution,
+  PublicSanadDocument,
+  QiraatStat,
   PublicTeacherProfileData,
   RecentTeacher,
   ReferenceOption,
@@ -44,6 +46,22 @@ export const getStateStats = cache(async (): Promise<Maybe<StateStat[]>> => {
   if (error) throw new PublicDataError('state-stats', error);
   return (data ?? []) as StateStat[];
 });
+
+export const getQiraatStats = cache(async (): Promise<Maybe<QiraatStat[]>> => {
+  const supabase = db();
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('public_qiraat_riwayat_stats');
+  if (error) throw new PublicDataError('qiraat-stats', error);
+  return (data ?? []) as QiraatStat[];
+});
+
+export async function getPublicSanadDocuments(teacherId: string): Promise<PublicSanadDocument[]> {
+  const supabase = db();
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('get_public_sanad_documents', { p_teacher_id: teacherId });
+  if (error) throw new PublicDataError('sanad-documents', error);
+  return (data ?? []) as PublicSanadDocument[];
+}
 
 export async function getDistrictStats(stateId: string): Promise<Maybe<DistrictStat[]>> {
   const supabase = db();

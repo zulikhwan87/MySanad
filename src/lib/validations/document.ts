@@ -19,6 +19,10 @@ export const RegisterDocumentSchema = z.object({
   sanad_chain_id: optionalUuid,
   ijazah_record_id: optionalUuid,
   notes: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().max(1000).optional()),
+  show_publicly: z.boolean().optional().default(false),
+}).refine((v) => !v.show_publicly || v.category === 'Sijil Ijazah Sanad', {
+  message: 'Hanya Sijil Ijazah Sanad boleh dipaparkan kepada awam.',
+  path: ['show_publicly'],
 });
 
 export type RegisterDocumentInput = z.input<typeof RegisterDocumentSchema>;

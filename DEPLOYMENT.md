@@ -40,6 +40,7 @@ npm run test:e2e               # ujian E2E desktop + mudah alih (memulakan `next
 | `009_documents.sql` | pendaftaran dokumen |
 | `010_admin_review.sql` | aliran keputusan pentadbir, notifikasi |
 | `011_settings_analytics_reference.sql` | tetapan, analitik, data rujukan |
+| `012_public_sanad_documents_qiraat.sql` | paparan awam sijil sanad, statistik qiraat & riwayat |
 
 Pilihan A — Supabase CLI:
 ```bash
@@ -95,7 +96,6 @@ tetapkan ia untuk persekitaran *Build* di Vercel.
 ## 4. GitHub
 ```bash
 git checkout main
-git merge phase-1-foundation          # atau buka Pull Request
 git remote add origin https://github.com/<akaun>/mysanad.git
 git push -u origin main
 ```

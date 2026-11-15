@@ -171,3 +171,30 @@ export interface PublicTeacherProfileData {
   sanad_chains: PublicSanadChain[];
   contacts: Array<{ id: string; channel_type: string; label: string; contact_value: string }>;
 }
+
+export interface RiwayatStat {
+  id: string;
+  code: string;
+  label_rumi: string;
+  label_arabic: string;
+  teacher_count: number;
+}
+
+export interface QiraatStat {
+  id: string;
+  code: string;
+  title_rumi: string;
+  title_arabic: string;
+  imam_name_rumi: string;
+  teacher_count: number;
+  riwayat: RiwayatStat[];
+}
+
+/** A sanad certificate the teacher chose to show and an administrator approved. No file name or storage path. */
+export interface PublicSanadDocument {
+  id: string;
+  mime_type: string;
+  sanad_chain_id: string | null;
+  chain_title: string | null;
+  reviewed_at: string | null;
+}

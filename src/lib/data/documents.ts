@@ -12,6 +12,7 @@ export interface MyDocument {
   review_status: VerificationStatus;
   review_notes: string | null;
   uploaded_at: string;
+  show_publicly: boolean;
   sanad_chain: { id: string; title: string } | null;
   ijazah: { id: string; ijazah_title: string } | null;
 }
@@ -26,7 +27,7 @@ export async function getMyDocuments(): Promise<MyDocument[] | null> {
   const { data, error } = await supabase
     .from('documents')
     .select(
-      'id, category, original_filename, mime_type, file_size_bytes, review_status, review_notes, uploaded_at, sanad_chains(id, title), ijazah_records(id, ijazah_title)',
+      'id, category, original_filename, mime_type, file_size_bytes, review_status, review_notes, uploaded_at, show_publicly, sanad_chains(id, title), ijazah_records(id, ijazah_title)',
     )
     .eq('teacher_id', teacher.id)
     .order('uploaded_at', { ascending: false });

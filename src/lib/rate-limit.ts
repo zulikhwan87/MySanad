@@ -13,6 +13,7 @@ export const RATE_LIMITS = {
   register: { max: 5, windowSeconds: 60 * 60 },
   passwordReset: { max: 5, windowSeconds: 60 * 60 },
   signedUrl: { max: 60, windowSeconds: 60 },
+  publicDocument: { max: 30, windowSeconds: 60 },
   teacherWrite: { max: 60, windowSeconds: 60 },
   adminWrite: { max: 120, windowSeconds: 60 },
   revealIc: { max: 10, windowSeconds: 60 * 60 },

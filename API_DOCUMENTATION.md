@@ -28,6 +28,12 @@ Sehingga 6 cadangan untuk kotak carian (q ≥ 2 aksara): `{ "suggestions": [ { "
 ### `GET /api/states`
 Bilangan guru diterbitkan bagi 16 negeri & WP: `{ "states": [ { "slug", "name", "teacher_count", … } ] }`.
 
+### `GET /api/public-documents/{documentId}`
+Membuka sijil sanad yang dipaparkan pada profil awam (butang **Papar sanad**). Ubah hala `302` ke pautan bertandatangan
+**60 saat**. Hanya sijil yang guru minta dipaparkan, telah diluluskan pentadbir dan milik profil yang diterbitkan.
+- `400` ID bukan UUID; `404` untuk semua dokumen lain (respons sama); `429` melebihi 30 permintaan/minit setiap IP;
+  `503` jika `SUPABASE_SERVICE_ROLE_KEY` tiada.
+
 ## Berpengesahan
 
 ### `GET /api/documents/{documentId}/signed-url[?muat-turun=1]`
@@ -50,12 +56,12 @@ Dipanggil oleh pelayan melalui klien Supabase; RLS dan semakan peranan berlaku d
 
 | Fungsi | Pemanggil | Keterangan |
 |---|---|---|
-| `search_public_teachers`, `get_public_teacher_profile`, `get_public_sanad_graph`, `public_platform_stats` | Awam | Data awam sahaja |
+| `search_public_teachers`, `get_public_teacher_profile`, `get_public_sanad_graph`, `public_platform_stats`, `public_qiraat_riwayat_stats`, `get_public_sanad_documents` | Awam | Data awam sahaja |
 | `submit_my_teacher_profile`, `withdraw_my_teacher_submission` | Guru | Penghantaran profil atomik |
 | `ensure_my_sanad_node`, `submit_my_sanad_chain`, `withdraw_my_sanad_chain`, `revise_my_sanad_chain`, `search_linkable_sanad_nodes` | Guru | Sanad |
-| `register_my_document`, `delete_my_document` | Guru | Dokumen |
+| `register_my_document`, `delete_my_document`, `set_my_document_public` | Guru | Dokumen; paparan awam sijil sanad |
 | `admin_start_review`, `admin_decide_submission`, `admin_decide_change_request`, `admin_set_publication`, `admin_set_featured`, `admin_set_item_status`, `admin_get_teacher_ic_ciphertext`, `admin_dashboard_counts`, `admin_analytics` | Pentadbir | Semakan & pengurusan |
-| `consume_rate_limit` | Service role | Had kadar |
+| `consume_rate_limit`, `public_sanad_document_path` | Service role | Had kadar; laluan storan sijil awam |
 | `promote_user_to_super_admin` | SQL Editor sahaja | Lantikan pertama |
 
 Butiran setiap fungsi: `DATABASE_SCHEMA.md`.

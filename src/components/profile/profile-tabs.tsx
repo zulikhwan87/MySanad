@@ -3,22 +3,22 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Award, Building2, ExternalLink, GraduationCap, Mail, Network } from 'lucide-react';
+import { Award, Building2, ExternalLink, FileText, GraduationCap, Mail, Network } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/public/states';
 import { SanadChainCard } from './sanad-chain-card';
 import { cn } from '@/lib/utils';
-import type { PublicTeacherProfileData } from '@/types/public';
-import type { PublicGraph } from '@/lib/data/sanad';
-import { SanadGraphLazy } from '@/components/sanad/sanad-graph-lazy';
+import type { PublicSanadDocument, PublicTeacherProfileData } from '@/types/public';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n/client';
 import { fmt } from '@/lib/i18n/dictionaries';
+import { intlLocale } from '@/lib/i18n/config';
 
 const TABS = [
   { id: 'profil', key: 'tabProfile' },
   { id: 'kelayakan', key: 'tabQualifications' },
   { id: 'sanad', key: 'tabSanad' },
-  { id: 'graf', key: 'tabGraph' },
+  { id: 'dokumen', key: 'tabSanadDocs' },
   { id: 'institusi', key: 'tabInstitution' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
@@ -51,8 +51,8 @@ function contactHref(type: string, value: string): string | null {
   return safeHttpUrl(value.startsWith('http') ? value : `https://${value}`);
 }
 
-export function ProfileTabs({ data, graph = null }: { data: PublicTeacherProfileData; graph?: PublicGraph | null }) {
-  const { t, dir } = useI18n();
+export function ProfileTabs({ data, documents = [] }: { data: PublicTeacherProfileData; documents?: PublicSanadDocument[] }) {
+  const { t, dir, locale } = useI18n();
   const [tab, setTab] = useState<TabId>('profil');
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const { teacher } = data;
@@ -78,7 +78,7 @@ export function ProfileTabs({ data, graph = null }: { data: PublicTeacherProfile
         {TABS.map((tabDef, i) => {
           const selected = tabDef.id === tab;
           const count =
-            tabDef.id === 'sanad' ? data.sanad_chains.length : tabDef.id === 'kelayakan' ? data.education.length + data.ijazah.length : null;
+            tabDef.id === 'sanad' ? data.sanad_chains.length : tabDef.id === 'dokumen' ? documents.length : tabDef.id === 'kelayakan' ? data.education.length + data.ijazah.length : null;
           return (
             <button
               key={tabDef.id}
@@ -241,19 +241,42 @@ export function ProfileTabs({ data, graph = null }: { data: PublicTeacherProfile
             )
           ) : null}
 
-          {tab === 'graf' ? (
-            !data.settings.show_sanad_graph ? (
-              <EmptyState title={t.profile.graphHidden}>{t.profile.graphHiddenBody}</EmptyState>
-            ) : graph && graph.edges.length ? (
-              <SanadGraphLazy
-                data={graph}
-                mode="public"
-                title={`Sanad ${data.teacher.public_display_name}`}
-                allowExport={graph.chains.length > 0 && graph.chains.every((c) => c.allow_export)}
-                height={520}
-              />
+          {tab === 'dokumen' ? (
+            documents.length === 0 ? (
+              <EmptyState title={t.profile.noDocs}>{t.profile.noDocsBody}</EmptyState>
             ) : (
-              <EmptyState title={t.profile.noGraph}>{t.profile.noGraphBody}</EmptyState>
+              <>
+                <ul className="space-y-3">
+                  {documents.map((d) => (
+                    <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+                      <span className="flex min-w-0 items-start gap-3">
+                        <FileText className="mt-0.5 size-5 shrink-0 text-emerald-600" aria-hidden />
+                        <span className="min-w-0">
+                          <span className="block font-semibold text-forest-900">{t.profile.docTitle}</span>
+                          <span className="block text-sm text-muted-foreground">
+                            {[
+                              d.chain_title ? fmt(t.profile.docChain, { title: d.chain_title }) : null,
+                              d.reviewed_at
+                                ? fmt(t.profile.docReviewed, {
+                                    date: new Date(d.reviewed_at).toLocaleDateString(intlLocale(locale), { day: 'numeric', month: 'short', year: 'numeric' }),
+                                  })
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </span>
+                      </span>
+                      <Button asChild size="sm">
+                        <a href={`/api/public-documents/${d.id}`} target="_blank" rel="noopener noreferrer">
+                          {t.profile.viewSanad} <ExternalLink className="size-3.5" aria-hidden />
+                        </a>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground">{t.profile.docNote}</p>
+              </>
             )
           ) : null}
 

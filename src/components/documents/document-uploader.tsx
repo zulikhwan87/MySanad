@@ -40,6 +40,7 @@ export function DocumentUploader({
   const [ijazahId, setIjazahId] = useState(defaults.ijazahId ?? '');
   const [chainId, setChainId] = useState(defaults.chainId ?? '');
   const [notes, setNotes] = useState('');
+  const [showPublicly, setShowPublicly] = useState(false);
   const [stage, setStage] = useState<'idle' | 'checking' | 'uploading' | 'registering'>('idle');
   const [result, setResult] = useState<ActionResult | null>(null);
   const [, startTransition] = useTransition();
@@ -79,12 +80,14 @@ export function DocumentUploader({
       ijazah_record_id: ijazahId,
       sanad_chain_id: chainId,
       notes,
+      show_publicly: category === 'Sijil Ijazah Sanad' && showPublicly,
     });
     setStage('idle');
     setResult(res);
     if (res.ok) {
       setFile(null);
       setNotes('');
+      setShowPublicly(false);
       if (input.current) input.current.value = '';
       startTransition(() => router.refresh());
     }
@@ -150,11 +153,31 @@ export function DocumentUploader({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
+        {category === 'Sijil Ijazah Sanad' ? (
+          <label htmlFor="doc-public" className="flex items-start gap-2 rounded-lg border bg-secondary/40 p-3 text-sm sm:col-span-2">
+            <input
+              id="doc-public"
+              type="checkbox"
+              checked={showPublicly}
+              onChange={(e) => setShowPublicly(e.target.checked)}
+              className="mt-0.5 size-4 accent-[hsl(var(--primary))]"
+            />
+            <span>
+              <span className="font-medium">Paparkan sijil ini pada profil awam saya</span>
+              <span className="block text-xs text-muted-foreground">
+                Pelawat boleh membuka sijil melalui butang &quot;Papar sanad&quot; selepas pentadbir menyemaknya. Pastikan sijil tidak
+                mengandungi No. MyKad, alamat atau maklumat peribadi lain yang anda tidak mahu didedahkan.
+              </span>
+            </span>
+          </label>
+        ) : null}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
         <p className="flex items-center gap-2 text-xs text-muted-foreground">
           <ShieldCheck className="size-4 text-emerald-600" aria-hidden />
-          Disimpan secara peribadi. Hanya anda dan pentadbir yang diberi kuasa boleh melihatnya.
+          {category === 'Sijil Ijazah Sanad' && showPublicly
+            ? 'Disimpan secara peribadi sehingga diluluskan, kemudian dipaparkan pada profil awam anda.'
+            : 'Disimpan secara peribadi. Hanya anda dan pentadbir yang diberi kuasa boleh melihatnya.'}
         </p>
         <Button type="submit" disabled={busy}>
           {busy ? <Loader2 className="animate-spin" aria-hidden /> : <FileUp aria-hidden />}

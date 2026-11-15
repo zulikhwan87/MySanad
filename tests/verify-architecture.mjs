@@ -89,6 +89,7 @@ const requiredRoutes = [
   'src/app/sanad/page.tsx',
   'src/app/sanad/[sanadId]/page.tsx',
   'src/app/institutions/page.tsx',
+  'src/app/qiraat/page.tsx',
   'src/app/about/page.tsx',
   'src/app/contact/page.tsx',
   'src/app/privacy/page.tsx',
@@ -123,5 +124,5 @@ const requiredRoutes = [
 for (const route of requiredRoutes) {
   assert.ok(fs.existsSync(path.join(root, route)), `Missing Next.js App Router route: ${route}`);
 }
-console.log(`[PASS] All 38 Public, Teacher, and Admin App Router routes verified`);
+console.log(`[PASS] All ${requiredRoutes.length} Public, Teacher, and Admin App Router routes verified`);
 console.log('=== ALL MYSANAD ACCEPTANCE & ARCHITECTURE CHECKS PASSED (100%) ===');

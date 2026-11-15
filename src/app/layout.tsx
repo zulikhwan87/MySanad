@@ -15,9 +15,9 @@ const arabic = Noto_Sans_Arabic({ subsets: ['arabic'], variable: '--font-arabic'
 const amiri = Amiri({ subsets: ['arabic', 'latin'], weight: ['400', '700'], variable: '--font-amiri', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: { default: 'MySanad — Direktori Sanad Guru al-Quran Malaysia', template: '%s · MySanad' },
+  title: { default: 'MySanad — Direktori dan Digitalisasi Sanad al-Quran Malaysia', template: '%s · MySanad' },
   description:
-    'Direktori dan platform dokumentasi sanad guru al-Quran Malaysia. Maklumat diserahkan oleh guru dan disemak oleh pentadbir; bukan pengisytiharan kesahihan sanad.',
+    'Direktori dan digitalisasi sanad al-Quran Malaysia. Maklumat diserahkan oleh guru dan disemak oleh pentadbir; bukan pengisytiharan kesahihan sanad.',
 };
 
 export const viewport: Viewport = { themeColor: '#225339' };

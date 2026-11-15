@@ -180,6 +180,7 @@ async function run() {
         p_mime_type: 'application/pdf',
         p_file_size_bytes: pdf.length,
         p_sanad_chain_id: ctx.chainId,
+        p_show_publicly: true,
       }),
       'register_my_document',
     );
@@ -302,6 +303,34 @@ async function run() {
     assert(g.edges.length >= 1, `hubungan ${g.edges.length}`);
     assert(!JSON.stringify(g).includes('BUKTI-SULIT-UJIAN'), 'bukti sulit bocor');
     return `${g.nodes.length} nod, ${g.edges.length} hubungan`;
+  });
+
+  await step('Sijil sanad yang diminta dipaparkan kepada awam selepas lulus (tanpa nama fail/laluan)', async () => {
+    const docs = must(await anon.rpc('get_public_sanad_documents', { p_teacher_id: ctx.teacherId }), 'dokumen awam');
+    assert(docs.length === 1 && docs[0].id === ctx.docId, `dokumen awam ${docs.length}`);
+    const s = JSON.stringify(docs);
+    assert(!s.includes('ujian-ijazah') && !s.includes(ctx.teacher.id), 'nama fail atau laluan bocor');
+    const { error } = await anon.rpc('public_sanad_document_path', { p_document_id: ctx.docId });
+    assert(error, 'awam boleh membaca laluan storan');
+  });
+
+  const appUrl = process.env.LIVE_CHECK_APP_URL;
+  if (appUrl) {
+    await step(`Butang "Papar sanad" di ${appUrl} membuka PDF`, async () => {
+      const res = await fetch(`${appUrl}/api/public-documents/${ctx.docId}`, { redirect: 'manual' });
+      assert(res.status === 302, `HTTP ${res.status}`);
+      const pdf = await fetch(res.headers.get('location'));
+      const head = Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString();
+      assert(pdf.ok && head === '%PDF-', `fail ${pdf.status} ${head}`);
+      const page = await (await fetch(`${appUrl}/directory/${ctx.teacherId}`)).text();
+      assert(page.includes('Papar Sanad'), 'tab Papar Sanad tiada dalam profil');
+    });
+  }
+
+  await step('Guru menyembunyikan sijil; ia hilang serta-merta', async () => {
+    must(await t.rpc('set_my_document_public', { p_document_id: ctx.docId, p_show: false }), 'sembunyi');
+    const docs = must(await anon.rpc('get_public_sanad_documents', { p_teacher_id: ctx.teacherId }), 'dokumen awam');
+    assert(docs.length === 0, 'masih dipaparkan');
   });
 
   await step('Guru menerima notifikasi tanpa nota dalaman', async () => {

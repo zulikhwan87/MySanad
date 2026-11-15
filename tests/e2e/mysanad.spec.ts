@@ -5,11 +5,29 @@ const withDb = Boolean(process.env.E2E_WITH_DB);
 
 // Run against a built app: `npm run build && npx next start` then `npm run test:e2e`.
 test.describe('MySanad Phase 1', () => {
-  test('homepage shows the hero and the state selector (or the not-connected notice)', async ({ page }) => {
+  test('homepage shows the hero and stats, without the state grid (or the not-connected notice)', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('h1')).toContainText('Direktori');
-    if (withDb) await expect(page.locator('a[href^="/states/"]')).toHaveCount(16);
+    await expect(page.locator('main a[href^="/states/"]')).toHaveCount(0);
+    if (withDb) await expect(page.getByRole('heading', { name: 'Statistik platform' })).toBeAttached();
     else await expect(page.getByText('Pangkalan data belum disambungkan').first()).toBeVisible();
+  });
+
+  test('header links to Qiraat & Riwayat and no longer to institutions', async ({ page }) => {
+    await page.goto('/');
+    const header = page.locator('header');
+    await expect(header.locator('a[href="/institutions"]')).toHaveCount(0);
+    await expect(header.locator('a[href="/sanad"]')).toHaveCount(0);
+    await page.goto('/qiraat');
+    await expect(page.locator('h1')).toContainText('qiraat dan riwayat');
+    if (withDb) await expect(page.locator('a[href^="/directory?qiraat="]').first()).toBeVisible();
+  });
+
+  test('public sanad document route hides unknown documents', async ({ request }) => {
+    const res = await request.get('/api/public-documents/00000000-0000-0000-0000-000000000001', { maxRedirects: 0 });
+    expect([404, 503]).toContain(res.status());
+    const bad = await request.get('/api/public-documents/bukan-uuid', { maxRedirects: 0 });
+    expect([400, 503]).toContain(bad.status());
   });
 
   test('portals redirect anonymous visitors to login with a safe next path', async ({ page }) => {
@@ -50,7 +68,7 @@ test.describe('MySanad Phase 2 (public portal)', () => {
 
   test('directory search updates the URL', async ({ page }) => {
     await page.goto('/directory');
-    await page.getByRole('combobox').fill('Ahmad');
+    await page.locator('input[role="combobox"]').fill('Ahmad');
     await page.getByRole('button', { name: 'Cari' }).click();
     await expect(page).toHaveURL(/\/directory\?q=Ahmad/);
   });

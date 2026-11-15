@@ -17,8 +17,7 @@ export async function SiteHeader() {
   const nav: NavItem[] = [
     { href: '/directory', label: t.nav.directory },
     { href: '/states', label: t.nav.states },
-    { href: '/sanad', label: t.nav.sanad },
-    { href: '/institutions', label: t.nav.institutions },
+    { href: '/qiraat', label: t.nav.qiraat },
     { href: '/about', label: t.nav.about },
   ];
 
