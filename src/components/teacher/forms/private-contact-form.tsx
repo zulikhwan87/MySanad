@@ -10,7 +10,7 @@ import { savePrivateContactAction } from '@/lib/actions/teacher-actions';
 import { PrivateContactSchema, type PrivateContactInput } from '@/lib/validations/teacher';
 import type { TeacherRecord, TeacherReferenceData } from '@/types/teacher';
 
-export function PrivateContactForm({ teacher, reference }: { teacher: TeacherRecord; reference: TeacherReferenceData }) {
+export function PrivateContactForm({ teacher, reference, teacherId }: { teacher: TeacherRecord; reference: TeacherReferenceData; teacherId?: string }) {
   const router = useRouter();
   const {
     register,
@@ -36,7 +36,7 @@ export function PrivateContactForm({ teacher, reference }: { teacher: TeacherRec
       className="space-y-4"
       onSubmit={handleSubmit((values) =>
         run(async () => {
-          const res = await savePrivateContactAction(values);
+          const res = await savePrivateContactAction(values, teacherId);
           if (res.ok) router.refresh();
           return res;
         }),

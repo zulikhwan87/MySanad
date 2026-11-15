@@ -18,12 +18,14 @@ export function TeachingForm({
   acceptingStudents,
   nextHref,
   submitLabel = 'Simpan & teruskan',
+  teacherId,
 }: {
   teacher: TeacherRecord;
   reference: TeacherReferenceData;
   acceptingStudents: boolean;
   nextHref?: string;
   submitLabel?: string;
+  teacherId?: string;
 }) {
   const router = useRouter();
   const [proposeNew, setProposeNew] = useState(false);
@@ -60,7 +62,7 @@ export function TeachingForm({
       className="space-y-8"
       onSubmit={handleSubmit((values) =>
         run(async () => {
-          const res = await saveTeachingStepAction(proposeNew ? { ...values, primary_institution_id: '' } : { ...values, new_institution_name: '' });
+          const res = await saveTeachingStepAction(proposeNew ? { ...values, primary_institution_id: '' } : { ...values, new_institution_name: '' }, teacherId);
           if (res.ok) {
             if (nextHref) router.push(nextHref);
             else router.refresh();

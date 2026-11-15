@@ -3,6 +3,7 @@ import { cache } from 'react';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { createPublicSupabase } from '@/lib/supabase/public';
 import { getSessionProfile } from '@/lib/auth/session';
+import { isAdmin } from '@/lib/auth/roles';
 import type { VerificationStatus } from '@/types/mysanad';
 import type { GraphChainData, GraphEdgeData, GraphNodeData, SanadGraphData } from '@/lib/sanad/graph';
 
@@ -60,17 +61,24 @@ export interface MyChainSummary {
   edge_count: number;
 }
 
-async function myTeacher() {
+/** The signed-in teacher, or (administrators only) the teacher given by ID. */
+async function myTeacher(teacherId?: string) {
   const profile = await getSessionProfile();
   if (!profile) return null;
   const supabase = createServerSupabase();
+  if (teacherId !== undefined) {
+    if (!isAdmin(profile)) return null;
+    const { data, error } = await supabase.from('teachers').select('id').eq('id', teacherId).maybeSingle();
+    if (error) throw new SanadDataError('teacher', error);
+    return { supabase, teacherId: (data?.id as string | undefined) ?? null, userId: profile.id };
+  }
   const { data, error } = await supabase.from('teachers').select('id').eq('profile_id', profile.id).maybeSingle();
   if (error) throw new SanadDataError('teacher', error);
   return { supabase, teacherId: (data?.id as string | undefined) ?? null, userId: profile.id };
 }
 
-export const getMySanadChains = cache(async (): Promise<MyChainSummary[] | null> => {
-  const ctx = await myTeacher();
+export const getMySanadChains = cache(async (teacherId?: string): Promise<MyChainSummary[] | null> => {
+  const ctx = await myTeacher(teacherId);
   if (!ctx) return null;
   if (!ctx.teacherId) return [];
   const { data, error } = await ctx.supabase
@@ -126,8 +134,8 @@ export interface MyChainDetail {
 }
 
 /** The signed-in teacher's own chain with private details (RLS limits rows to the owner). */
-export async function getMySanadChain(chainId: string): Promise<MyChainDetail | 'not-found' | null> {
-  const ctx = await myTeacher();
+export async function getMySanadChain(chainId: string, forTeacherId?: string): Promise<MyChainDetail | 'not-found' | null> {
+  const ctx = await myTeacher(forTeacherId);
   if (!ctx) return null;
   if (!ctx.teacherId) return 'not-found';
   const { supabase, teacherId, userId } = ctx;

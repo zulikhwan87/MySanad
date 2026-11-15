@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Pencil } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PortalHeader } from '@/components/teacher/portal-header';
 import { TeacherReview } from '@/components/admin/teacher-review';
@@ -25,11 +26,18 @@ export default async function AdminTeacherPage({ params }: { params: { teacherId
         title={t.public_display_name}
         description={t.teacher_code}
         actions={
-          t.is_published ? (
-            <Link href={`/directory/${t.id}`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-              Profil awam <ExternalLink className="size-3.5" aria-hidden />
-            </Link>
-          ) : null
+          <div className="flex flex-wrap items-center gap-3">
+            {t.is_published ? (
+              <Link href={`/directory/${t.id}`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                Profil awam <ExternalLink className="size-3.5" aria-hidden />
+              </Link>
+            ) : null}
+            <Button asChild size="sm">
+              <Link href={`/admin/teachers/${t.id}/sunting`}>
+                <Pencil aria-hidden /> Sunting data guru
+              </Link>
+            </Button>
+          </div>
         }
       />
       <Card>

@@ -382,6 +382,7 @@ export interface AdminTeacherListItem {
   is_published: boolean;
   is_featured: boolean;
   is_demo_record: boolean;
+  managed_by_admin: boolean;
   created_at: string;
   state: { name: string } | null;
 }
@@ -389,7 +390,7 @@ export interface AdminTeacherListItem {
 export async function getAdminTeachers(f: { q?: string; status?: string; page: number }): Promise<Paginated<AdminTeacherListItem>> {
   let q = db()
     .from('teachers')
-    .select('id, teacher_code, public_display_name, profile_verification_status, is_published, is_featured, is_demo_record, created_at, state:malaysian_states!teachers_teaching_state_id_fkey(name)', { count: 'exact' });
+    .select('id, teacher_code, public_display_name, profile_verification_status, is_published, is_featured, is_demo_record, managed_by_admin, created_at, state:malaysian_states!teachers_teaching_state_id_fkey(name)', { count: 'exact' });
   if (f.status) q = q.eq('profile_verification_status', f.status);
   if (f.q) {
     const term = `%${escapeLike(f.q)}%`;

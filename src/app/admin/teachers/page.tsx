@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { Search, UserPlus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,17 @@ export default async function AdminTeachersPage({ searchParams }: { searchParams
   };
   return (
     <>
-      <PortalHeader title="Pengurusan Guru" description={`${result.total} guru`} />
+      <PortalHeader
+        title="Pengurusan Guru"
+        description={`${result.total} guru`}
+        actions={
+          <Button asChild>
+            <Link href="/admin/teachers/new">
+              <UserPlus aria-hidden /> Tambah guru
+            </Link>
+          </Button>
+        }
+      />
       <form className="flex flex-wrap gap-2" action="/admin/teachers" role="search">
         <label htmlFor="t-q" className="sr-only">
           Cari guru
@@ -80,6 +90,9 @@ export default async function AdminTeachersPage({ searchParams }: { searchParams
                             {t.public_display_name}
                           </Link>
                           {t.is_demo_record ? <span className="ml-2"><DemoBadge /></span> : null}
+                          {t.managed_by_admin ? (
+                            <span className="ms-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">Diurus pentadbir</span>
+                          ) : null}
                         </td>
                         <td className="py-2 pr-3">{t.state?.name ?? '—'}</td>
                         <td className="py-2 pr-3">{fmtDate(t.created_at)}</td>

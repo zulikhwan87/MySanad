@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth/session';
+import { isAdmin } from '@/lib/auth/roles';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { DOCUMENT_MIME, detectDocumentKind, isValidDocumentPath, kindFromPath } from '@/lib/files/document-signature';
 import { RegisterDocumentSchema } from '@/lib/validations/document';
@@ -25,9 +26,13 @@ function dbMessage(error: { code?: string; message: string }): string {
  * We verify its real type from the first bytes, then register it atomically in the database.
  * Any failure removes the uploaded object so nothing unregistered is left behind.
  */
-export async function registerDocumentAction(raw: unknown): Promise<Result> {
+export async function registerDocumentAction(raw: unknown, teacherId?: string): Promise<Result> {
   const profile = await getSessionProfile();
   if (!profile?.is_active) return { ok: false, message: 'Sesi tamat. Sila log masuk semula.' };
+  // Administrators may upload for a teacher: the file sits in the administrator's folder, the record belongs to the teacher.
+  if (teacherId !== undefined && (!isAdmin(profile) || !IdSchema.safeParse(teacherId).success)) {
+    return { ok: false, message: 'Anda tidak mempunyai kebenaran untuk tindakan ini.' };
+  }
   if (!(await consumeRateLimit('teacherWrite', `user:${profile.id}`))) {
     return { ok: false, message: 'Terlalu banyak permintaan. Sila tunggu sebentar.' };
   }
@@ -69,11 +74,13 @@ export async function registerDocumentAction(raw: unknown): Promise<Result> {
     p_ijazah_record_id: v.ijazah_record_id ?? null,
     p_notes: v.notes ?? null,
     p_show_publicly: v.show_publicly,
+    ...(teacherId ? { p_teacher_id: teacherId } : {}),
   });
   if (error) return discard(dbMessage(error));
 
   revalidatePath('/teacher/documents');
   revalidatePath('/teacher/verification');
+  if (teacherId) revalidatePath('/admin', 'layout');
   return { ok: true, message: 'Dokumen dimuat naik dan dihantar untuk semakan.', id: data as string };
 }
 
@@ -108,6 +115,7 @@ export async function setDocumentPublicAction(documentId: string, show: boolean)
   if (error) return { ok: false, message: dbMessage(error) };
   revalidatePath('/teacher/documents');
   revalidatePath('/teacher/verification');
+  revalidatePath('/admin', 'layout');
   if (!show) return { ok: true, message: 'Sijil tidak lagi dipaparkan pada profil awam.' };
   return {
     ok: true,

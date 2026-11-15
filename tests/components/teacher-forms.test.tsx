@@ -122,7 +122,7 @@ describe('SubmitPanel (step 7)', () => {
     actions.submitProfileAction.mockResolvedValue({ ok: true, message: 'Profil dihantar untuk pengesahan.' });
     await user.type(screen.getByLabelText(/Catatan kepada pentadbir/), 'Terima kasih');
     await user.click(screen.getByRole('button', { name: /Hantar untuk pengesahan/ }));
-    await waitFor(() => expect(actions.submitProfileAction).toHaveBeenCalledWith('Terima kasih'));
+    await waitFor(() => expect(actions.submitProfileAction).toHaveBeenCalledWith('Terima kasih', undefined));
     expect(await screen.findByText('Profil dihantar untuk pengesahan.')).toBeInTheDocument();
   });
 

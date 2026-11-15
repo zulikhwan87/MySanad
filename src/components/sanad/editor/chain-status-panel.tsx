@@ -23,8 +23,11 @@ export function ChainStatusPanel({
   feedback,
   revisions,
   supersedes,
+  basePath = '/teacher/sanad',
 }: {
   chainId: string;
+  /** Where the chain pages live (teacher portal or admin editing). */
+  basePath?: string;
   status: VerificationStatus;
   feedback: string | null;
   revisions: Array<{ id: string; revision_no: number; reason: string; created_at: string }>;
@@ -77,7 +80,7 @@ export function ChainStatusPanel({
                 disabled={pending}
                 onClick={() =>
                   window.confirm('Padam rantaian draf ini? Tindakan ini tidak boleh dibatalkan.') &&
-                  act(() => deleteSanadChainAction(chainId), () => router.push('/teacher/sanad'))
+                  act(() => deleteSanadChainAction(chainId), () => router.push(basePath))
                 }
               >
                 <Trash2 aria-hidden /> Padam draf
@@ -96,7 +99,7 @@ export function ChainStatusPanel({
         </Button>
       ) : null}
       {status === 'approved' || status === 'published' ? (
-        <Button variant="outline" disabled={pending} onClick={() => act(() => reviseSanadChainAction(chainId), (id) => id && router.push(`/teacher/sanad/${id}`))}>
+        <Button variant="outline" disabled={pending} onClick={() => act(() => reviseSanadChainAction(chainId), (id) => id && router.push(`${basePath}/${id}`))}>
           <GitPullRequest aria-hidden /> Cipta semakan baharu
         </Button>
       ) : null}

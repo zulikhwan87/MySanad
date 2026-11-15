@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { SelectField, TextareaField, TextField } from '@/components/forms/fields';
 import { useActionForm } from '@/components/auth/use-action-form';
 import { FormMessage, FormSection, SubmitRow } from './form-shell';
-import { savePersonalStepAction } from '@/lib/actions/teacher-actions';
+import { createManagedTeacherAction, savePersonalStepAction } from '@/lib/actions/teacher-actions';
 import { GENDERS, PersonalStepSchema, type PersonalStepInput } from '@/lib/validations/teacher';
 import type { TeacherRecord, TeacherReferenceData } from '@/types/teacher';
 
@@ -15,11 +15,19 @@ export function PersonalForm({
   reference,
   piiEnabled,
   nextHref,
+  teacherId,
+  adminCreate = false,
+  submitLabel,
 }: {
   teacher: TeacherRecord | null;
   reference: TeacherReferenceData;
   piiEnabled: boolean;
   nextHref: string;
+  /** Administrator editing this teacher. */
+  teacherId?: string;
+  /** Administrator creating a profile without an account; nextHref receives `/<id>`. */
+  adminCreate?: boolean;
+  submitLabel?: string;
 }) {
   const router = useRouter();
   const {
@@ -53,8 +61,12 @@ export function PersonalForm({
       className="space-y-8"
       onSubmit={handleSubmit((values) =>
         run(async () => {
-          const res = await savePersonalStepAction(values);
-          if (res.ok) router.push(nextHref);
+          const res = adminCreate ? await createManagedTeacherAction(values) : await savePersonalStepAction(values, teacherId);
+          if (res.ok) {
+            if (adminCreate && res.id) router.push(`${nextHref}/${res.id}/sunting`);
+            else if (teacherId) router.refresh();
+            else router.push(nextHref);
+          }
           return res;
         }),
       )}
@@ -147,7 +159,7 @@ export function PersonalForm({
         </div>
       </FormSection>
 
-      <SubmitRow pending={pending} label="Simpan & teruskan" />
+      <SubmitRow pending={pending} label={submitLabel ?? "Simpan & teruskan"} />
     </form>
   );
 }

@@ -16,7 +16,17 @@ import { IjazahSchema, type IjazahInput } from '@/lib/validations/teacher';
 import type { ActionResult } from '@/lib/validations/auth';
 import type { IjazahRecord, TeacherReferenceData } from '@/types/teacher';
 
-function IjazahForm({ record, reference, onDone }: { record: IjazahRecord | null; reference: TeacherReferenceData; onDone: () => void }) {
+function IjazahForm({
+  record,
+  reference,
+  onDone,
+  teacherId,
+}: {
+  record: IjazahRecord | null;
+  reference: TeacherReferenceData;
+  onDone: () => void;
+  teacherId?: string;
+}) {
   const router = useRouter();
   const {
     register,
@@ -48,7 +58,7 @@ function IjazahForm({ record, reference, onDone }: { record: IjazahRecord | null
       className="space-y-4 rounded-2xl border bg-secondary/40 p-4"
       onSubmit={handleSubmit((values) =>
         run(async () => {
-          const res = await saveIjazahAction(record?.id ?? null, values);
+          const res = await saveIjazahAction(record?.id ?? null, values, teacherId);
           if (res.ok) {
             onDone();
             router.refresh();
@@ -90,7 +100,17 @@ function IjazahForm({ record, reference, onDone }: { record: IjazahRecord | null
   );
 }
 
-export function IjazahManager({ items, reference }: { items: IjazahRecord[]; reference: TeacherReferenceData }) {
+export function IjazahManager({
+  items,
+  reference,
+  teacherId,
+  documentsHref = '/teacher/documents',
+}: {
+  items: IjazahRecord[];
+  reference: TeacherReferenceData;
+  teacherId?: string;
+  documentsHref?: string;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState<string | 'new' | null>(null);
   const [message, setMessage] = useState<ActionResult | null>(null);
@@ -100,7 +120,7 @@ export function IjazahManager({ items, reference }: { items: IjazahRecord[]; ref
   function remove(id: string) {
     if (!window.confirm('Padam rekod ijazah ini?')) return;
     startTransition(async () => {
-      const res = await deleteIjazahAction(id);
+      const res = await deleteIjazahAction(id, teacherId);
       setMessage(res);
       if (res.ok) router.refresh();
     });
@@ -114,7 +134,7 @@ export function IjazahManager({ items, reference }: { items: IjazahRecord[]; ref
         {items.map((r) =>
           editing === r.id ? (
             <li key={r.id}>
-              <IjazahForm record={r} reference={reference} onDone={() => setEditing(null)} />
+              <IjazahForm record={r} reference={reference} teacherId={teacherId} onDone={() => setEditing(null)} />
             </li>
           ) : (
             <li key={r.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border bg-card p-4">
@@ -128,7 +148,7 @@ export function IjazahManager({ items, reference }: { items: IjazahRecord[]; ref
               <div className="flex items-center gap-2">
                 <StatusBadge status={r.verification_status} />
                 <Button asChild variant="ghost" size="icon" aria-label={`Muat naik sijil untuk ${r.ijazah_title}`}>
-                  <Link href={`/teacher/documents?ijazah=${r.id}`}>
+                  <Link href={`${documentsHref}${documentsHref.includes('?') ? '&' : '?'}ijazah=${r.id}`}>
                     <FileUp aria-hidden />
                   </Link>
                 </Button>
@@ -144,7 +164,7 @@ export function IjazahManager({ items, reference }: { items: IjazahRecord[]; ref
         )}
       </ul>
       {editing === 'new' ? (
-        <IjazahForm record={null} reference={reference} onDone={() => setEditing(null)} />
+        <IjazahForm record={null} reference={reference} teacherId={teacherId} onDone={() => setEditing(null)} />
       ) : (
         <Button variant="outline" onClick={() => setEditing('new')}>
           <Plus aria-hidden /> Tambah ijazah

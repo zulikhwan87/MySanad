@@ -115,6 +115,8 @@ const requiredRoutes = [
   'src/app/admin/sanad/page.tsx',
   'src/app/admin/sanad/[sanadId]/page.tsx',
   'src/app/admin/institutions/page.tsx',
+  'src/app/admin/teachers/new/page.tsx',
+  'src/app/admin/teachers/[teacherId]/sunting/page.tsx',
   'src/app/admin/reference-data/page.tsx',
   'src/app/admin/users/page.tsx',
   'src/app/admin/analytics/page.tsx',

@@ -21,7 +21,17 @@ const OPTIONS: Array<{ key: keyof TeacherSettings; label: string; description: s
   { key: 'accepting_students', label: 'Menerima pelajar baharu', description: 'Dipaparkan sebagai lencana pada profil.' },
 ];
 
-export function VisibilityForm({ settings, nextHref, submitLabel = 'Simpan' }: { settings: TeacherSettings; nextHref?: string; submitLabel?: string }) {
+export function VisibilityForm({
+  settings,
+  nextHref,
+  submitLabel = 'Simpan',
+  teacherId,
+}: {
+  settings: TeacherSettings;
+  nextHref?: string;
+  submitLabel?: string;
+  teacherId?: string;
+}) {
   const router = useRouter();
   const { register, handleSubmit, setError } = useForm<VisibilityStepInput>({
     resolver: zodResolver(VisibilityStepSchema),
@@ -35,7 +45,7 @@ export function VisibilityForm({ settings, nextHref, submitLabel = 'Simpan' }: {
       className="space-y-4"
       onSubmit={handleSubmit((values) =>
         run(async () => {
-          const res = await saveVisibilityAction(values);
+          const res = await saveVisibilityAction(values, teacherId);
           if (res.ok) {
             if (nextHref) router.push(nextHref);
             else router.refresh();

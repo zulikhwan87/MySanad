@@ -21,12 +21,15 @@ export function PhotoUploader({
   photoUrl,
   canRemove,
   needsReview,
+  teacherId,
 }: {
   userId: string;
   name: string;
   photoUrl: string | null;
   canRemove: boolean;
   needsReview: boolean;
+  /** Administrator uploading for this teacher (file goes to the administrator's folder). */
+  teacherId?: string;
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -50,7 +53,7 @@ export function PhotoUploader({
         setResult({ ok: false, message: 'Muat naik gagal. Sila cuba lagi.' });
         return;
       }
-      const res = await setProfilePhotoAction(path);
+      const res = await setProfilePhotoAction(path, teacherId);
       setResult(res);
       if (res.ok) router.refresh();
     });
@@ -85,7 +88,7 @@ export function PhotoUploader({
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
-                  const res = await removeProfilePhotoAction();
+                  const res = await removeProfilePhotoAction(teacherId);
                   setResult(res);
                   if (res.ok) router.refresh();
                 })

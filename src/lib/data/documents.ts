@@ -1,6 +1,7 @@
 import 'server-only';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth/session';
+import { isAdmin } from '@/lib/auth/roles';
 import type { VerificationStatus } from '@/types/mysanad';
 
 export interface MyDocument {
@@ -18,11 +19,13 @@ export interface MyDocument {
 }
 
 /** The signed-in teacher's documents (RLS: owner only). Never includes storage paths. */
-export async function getMyDocuments(): Promise<MyDocument[] | null> {
+export async function getMyDocuments(teacherId?: string): Promise<MyDocument[] | null> {
   const profile = await getSessionProfile();
   if (!profile) return null;
+  if (teacherId !== undefined && !isAdmin(profile)) return null;
   const supabase = createServerSupabase();
-  const { data: teacher } = await supabase.from('teachers').select('id').eq('profile_id', profile.id).maybeSingle();
+  const lookup = supabase.from('teachers').select('id');
+  const { data: teacher } = await (teacherId !== undefined ? lookup.eq('id', teacherId) : lookup.eq('profile_id', profile.id)).maybeSingle();
   if (!teacher) return [];
   const { data, error } = await supabase
     .from('documents')

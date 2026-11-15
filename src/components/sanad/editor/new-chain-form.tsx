@@ -14,7 +14,17 @@ import { NewSanadChainSchema, type NodeChoiceInput, type SanadChainInput, type S
 import { issuesByPath } from '@/lib/validations/issues';
 import type { TeacherReferenceData } from '@/types/teacher';
 
-export function NewChainForm({ reference }: { reference: TeacherReferenceData }) {
+export function NewChainForm({
+  reference,
+  teacherId,
+  chainHref = '/teacher/sanad',
+}: {
+  reference: TeacherReferenceData;
+  /** Administrator creating a chain for this teacher. */
+  teacherId?: string;
+  /** Base path of the chain page; the new chain ID is appended. */
+  chainHref?: string;
+}) {
   const router = useRouter();
   const [chain, setChain] = useState<SanadChainInput>({
     title: '',
@@ -45,8 +55,8 @@ export function NewChainForm({ reference }: { reference: TeacherReferenceData })
     }
     setErrors({});
     startTransition(async () => {
-      const res = await createSanadChainAction(payload);
-      if (res.ok && res.id) router.push(`/teacher/sanad/${res.id}`);
+      const res = await createSanadChainAction(payload, teacherId);
+      if (res.ok && res.id) router.push(`${chainHref}/${res.id}`);
       else {
         setMessage(res.message ?? 'Gagal mencipta rantaian.');
         if (res.fieldErrors) setErrors(Object.fromEntries(Object.entries(res.fieldErrors).map(([k, v]) => [k, v?.[0] ?? ''])));

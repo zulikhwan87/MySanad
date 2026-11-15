@@ -3,6 +3,7 @@ import { cache } from 'react';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { createPublicSupabase } from '@/lib/supabase/public';
 import { getSessionProfile, type SessionProfile } from '@/lib/auth/session';
+import { isAdmin } from '@/lib/auth/roles';
 import { decryptPii, maskIc } from '@/lib/crypto/pii';
 import {
   DEFAULT_SETTINGS,
@@ -27,7 +28,7 @@ const TEACHER_COLUMNS = [
   'professional_title', 'gender', 'ic_number_encrypted', 'private_phone', 'residential_address',
   'residential_state_id', 'residential_district_id', 'teaching_state_id', 'teaching_district_id',
   'primary_institution_id', 'photo_url', 'short_bio', 'full_biography', 'teaching_experience_years',
-  'specializations', 'primary_qiraat_id', 'primary_riwayat_id', 'profile_verification_status',
+  'specializations', 'primary_qiraat_id', 'primary_riwayat_id', 'profile_verification_status', 'managed_by_admin', 'profile_id',
   'documents_reviewed_badge', 'sanad_reviewed_badge', 'is_published', 'published_at', 'onboarding_step',
 ].join(', ');
 
@@ -45,12 +46,15 @@ export interface TeacherContext {
  * Everything the signed-in teacher owns. Reads go through the user's session, so RLS
  * guarantees only their own rows are returned. The IC number is decrypted only to mask it.
  */
-export const getMyTeacherContext = cache(async (): Promise<TeacherContext | null> => {
+export const getMyTeacherContext = cache(async (teacherId?: string): Promise<TeacherContext | null> => {
   const profile = await getSessionProfile();
   if (!profile) return null;
+  // Administrators may load any teacher by ID (RLS admin read policies).
+  if (teacherId !== undefined && !isAdmin(profile)) return null;
   const supabase = createServerSupabase();
 
-  const { data: row, error } = await supabase.from('teachers').select(TEACHER_COLUMNS).eq('profile_id', profile.id).maybeSingle();
+  const select = supabase.from('teachers').select(TEACHER_COLUMNS);
+  const { data: row, error } = await (teacherId !== undefined ? select.eq('id', teacherId) : select.eq('profile_id', profile.id)).maybeSingle();
   if (error) throw new TeacherDataError('teacher', error);
 
   if (!row) {

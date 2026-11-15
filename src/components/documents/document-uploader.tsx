@@ -28,10 +28,13 @@ export function DocumentUploader({
   userId,
   targets,
   defaults,
+  teacherId,
 }: {
   userId: string;
   targets: UploadTargets;
   defaults: { category?: string; ijazahId?: string; chainId?: string };
+  /** Administrator uploading for this teacher; userId is then the administrator's ID (storage folder). */
+  teacherId?: string;
 }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -81,7 +84,7 @@ export function DocumentUploader({
       sanad_chain_id: chainId,
       notes,
       show_publicly: category === 'Sijil Ijazah Sanad' && showPublicly,
-    });
+    }, teacherId);
     setStage('idle');
     setResult(res);
     if (res.ok) {

@@ -15,3 +15,17 @@ Ringkasan tugas pentadbir:
 7. No. MyKad penuh hanya boleh dipaparkan selepas sebab dinyatakan; setiap paparan direkod dalam log audit.
 
 Lencana *Dokumen Disemak* dan *Jalur Sanad Disemak* dikemas kini secara automatik berdasarkan rekod yang diluluskan.
+
+## Memasukkan data bagi pihak guru
+Untuk guru yang tidak dapat mendaftar sendiri (contohnya warga emas):
+1. **Pengurusan Guru → Tambah guru**: isi nama dan maklumat peribadi. Profil dicipta tanpa akaun atau emel dan ditanda
+   *Diurus pentadbir*.
+2. Di halaman **Sunting data guru**, lengkapkan bahagian *Kelayakan & ijazah*, *Pengajaran*, *Gambar*, *Dokumen*
+   (termasuk Sijil Ijazah Sanad untuk butang Papar Sanad), *Sanad* dan *Keterlihatan*.
+3. **Hantar & akaun → Hantar untuk pengesahan**, kemudian di **Barisan Semakan** terbitkan profil dan luluskan sanad serta
+   dokumen.
+4. Jika guru atau keluarganya mendaftar akaun kemudian, gunakan **Pautkan kepada akaun** supaya mereka boleh mengurus
+   profil sendiri.
+
+Pentadbir juga boleh menyunting profil guru yang mendaftar sendiri melalui **Sunting data guru**. Perubahan disimpan terus,
+direkod dalam log audit, dan guru menerima notifikasi (sekali setiap 30 minit). Masukkan data hanya dengan kebenaran guru.

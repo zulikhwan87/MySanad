@@ -36,7 +36,7 @@ export async function openSigned(id: string, download: boolean): Promise<string 
   return null;
 }
 
-export function DocumentList({ documents }: { documents: DocumentRow[] }) {
+export function DocumentList({ documents, adminView = false }: { documents: DocumentRow[]; adminView?: boolean }) {
   const router = useRouter();
   const [result, setResult] = useState<ActionResult | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -126,7 +126,7 @@ export function DocumentList({ documents }: { documents: DocumentRow[] }) {
                     {d.show_publicly ? 'Sembunyikan' : 'Paparkan awam'}
                   </Button>
                 ) : null}
-                {DELETABLE.includes(d.review_status) ? (
+                {!adminView && DELETABLE.includes(d.review_status) ? (
                   <Button variant="ghost" size="icon" aria-label={`Padam ${d.original_filename}`} disabled={busy !== null} onClick={() => remove(d)}>
                     {busy === `${d.id}:delete` ? <Loader2 className="animate-spin" aria-hidden /> : <Trash2 aria-hidden />}
                   </Button>

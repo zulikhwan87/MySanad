@@ -35,6 +35,11 @@ test.describe('MySanad Phase 1', () => {
     await expect(page).toHaveURL(/\/login\?next=%2Fadmin%2Fusers/);
   });
 
+  test('admin teacher entry pages require login', async ({ page }) => {
+    await page.goto('/admin/teachers/new');
+    await expect(page).toHaveURL(/\/login\?next=%2Fadmin%2Fteachers%2Fnew/);
+  });
+
   test('registration form validates in Bahasa Melayu', async ({ page }) => {
     await page.goto('/register');
     await page.getByRole('button', { name: 'Daftar Akaun' }).click();

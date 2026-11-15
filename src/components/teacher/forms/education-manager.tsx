@@ -15,7 +15,7 @@ import { EducationSchema, QUALIFICATION_LEVELS, type EducationInput } from '@/li
 import type { ActionResult } from '@/lib/validations/auth';
 import type { EducationRecord } from '@/types/teacher';
 
-function EducationForm({ record, onDone }: { record: EducationRecord | null; onDone: () => void }) {
+function EducationForm({ record, onDone, teacherId }: { record: EducationRecord | null; onDone: () => void; teacherId?: string }) {
   const router = useRouter();
   const {
     register,
@@ -42,7 +42,7 @@ function EducationForm({ record, onDone }: { record: EducationRecord | null; onD
       className="space-y-4 rounded-2xl border bg-secondary/40 p-4"
       onSubmit={handleSubmit((values) =>
         run(async () => {
-          const res = await saveEducationAction(record?.id ?? null, values);
+          const res = await saveEducationAction(record?.id ?? null, values, teacherId);
           if (res.ok) {
             onDone();
             router.refresh();
@@ -84,7 +84,7 @@ function EducationForm({ record, onDone }: { record: EducationRecord | null; onD
   );
 }
 
-export function EducationManager({ items }: { items: EducationRecord[] }) {
+export function EducationManager({ items, teacherId }: { items: EducationRecord[]; teacherId?: string }) {
   const router = useRouter();
   const [editing, setEditing] = useState<string | 'new' | null>(items.length === 0 ? 'new' : null);
   const [message, setMessage] = useState<ActionResult | null>(null);
@@ -93,7 +93,7 @@ export function EducationManager({ items }: { items: EducationRecord[] }) {
   function remove(id: string) {
     if (!window.confirm('Padam rekod pendidikan ini?')) return;
     startTransition(async () => {
-      const res = await deleteEducationAction(id);
+      const res = await deleteEducationAction(id, teacherId);
       setMessage(res);
       if (res.ok) router.refresh();
     });
@@ -107,7 +107,7 @@ export function EducationManager({ items }: { items: EducationRecord[] }) {
         {items.map((e) =>
           editing === e.id ? (
             <li key={e.id}>
-              <EducationForm record={e} onDone={() => setEditing(null)} />
+              <EducationForm record={e} teacherId={teacherId} onDone={() => setEditing(null)} />
             </li>
           ) : (
             <li key={e.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border bg-card p-4">
@@ -135,7 +135,7 @@ export function EducationManager({ items }: { items: EducationRecord[] }) {
         )}
       </ul>
       {editing === 'new' ? (
-        <EducationForm record={null} onDone={() => setEditing(null)} />
+        <EducationForm record={null} teacherId={teacherId} onDone={() => setEditing(null)} />
       ) : (
         <Button variant="outline" onClick={() => setEditing('new')}>
           <Plus aria-hidden /> Tambah pendidikan

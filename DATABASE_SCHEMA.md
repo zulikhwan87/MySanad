@@ -134,3 +134,15 @@ erDiagram
 - `public_sanad_document_path(id)` — service role sahaja; digunakan oleh `/api/public-documents/{id}`.
 - `public_qiraat_riwayat_stats()` — awam: bilangan guru diterbitkan bagi setiap qiraat dan riwayat (peraturan sama dengan
   tapisan direktori).
+
+## Migrasi 013 — Guru diurus pentadbir
+- `teachers.profile_id` boleh NULL; `teachers.managed_by_admin`; kekangan `chk_teachers_owner_or_managed`
+  (setiap guru mempunyai akaun atau diurus pentadbir).
+- `acting_teacher_id(p_teacher_id)` / `can_act_for_teacher(id)`: guru bertindak untuk diri sendiri; pentadbir untuk mana-mana guru.
+- Parameter pilihan `p_teacher_id` (pentadbir sahaja): `submit_my_teacher_profile`, `ensure_my_sanad_node`,
+  `register_my_document`. Fungsi rantaian dan `set_my_document_public` menerima pemilik atau pentadbir.
+- RLS: pentadbir boleh menulis `teacher_education`.
+- `v_public_teachers` / `is_teacher_public`: profil tanpa akaun dipaparkan apabila diterbitkan.
+- `notify_teacher` melangkau guru tanpa akaun. `notify_admin_edit` (pencetus) + `record_admin_edit`: notifikasi
+  `profile_updated_by_admin` kepada guru berakaun apabila pentadbir menyunting terus (sekali setiap 30 minit).
+- `admin_link_teacher_account(teacher_id, email)`: pautkan profil diurus kepada akaun berdaftar (notifikasi `account_linked`).

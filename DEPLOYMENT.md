@@ -41,6 +41,7 @@ npm run test:e2e               # ujian E2E desktop + mudah alih (memulakan `next
 | `010_admin_review.sql` | aliran keputusan pentadbir, notifikasi |
 | `011_settings_analytics_reference.sql` | tetapan, analitik, data rujukan |
 | `012_public_sanad_documents_qiraat.sql` | paparan awam sijil sanad, statistik qiraat & riwayat |
+| `013_admin_managed_teachers.sql` | guru diurus pentadbir, suntingan pentadbir, pautan akaun |
 
 Pilihan A — Supabase CLI:
 ```bash

@@ -10,7 +10,17 @@ import { saveQualificationsStepAction } from '@/lib/actions/teacher-actions';
 import { QualificationsStepSchema, type QualificationsStepInput } from '@/lib/validations/teacher';
 import type { TeacherRecord, TeacherReferenceData } from '@/types/teacher';
 
-export function QualificationsForm({ teacher, reference, nextHref }: { teacher: TeacherRecord; reference: TeacherReferenceData; nextHref: string }) {
+export function QualificationsForm({
+  teacher,
+  reference,
+  nextHref,
+  teacherId,
+}: {
+  teacher: TeacherRecord;
+  reference: TeacherReferenceData;
+  nextHref: string;
+  teacherId?: string;
+}) {
   const router = useRouter();
   const {
     register,
@@ -37,7 +47,7 @@ export function QualificationsForm({ teacher, reference, nextHref }: { teacher: 
       className="space-y-4"
       onSubmit={handleSubmit((values) =>
         run(async () => {
-          const res = await saveQualificationsStepAction(values);
+          const res = await saveQualificationsStepAction(values, teacherId);
           if (res.ok) router.push(nextHref);
           return res;
         }),

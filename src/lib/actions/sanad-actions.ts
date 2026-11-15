@@ -5,6 +5,7 @@ import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
 import type { z } from 'zod';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth/session';
+import { isAdmin } from '@/lib/auth/roles';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import type { ActionResult } from '@/lib/validations/auth';
 import { IdSchema } from '@/lib/validations/teacher';
@@ -16,20 +17,40 @@ interface Ctx {
   supabase: SupabaseClient;
   userId: string;
   teacherId: string;
+  /** An administrator working on another teacher's sanad. */
+  admin: boolean;
 }
 
-async function context(): Promise<Ctx | Result> {
+/**
+ * Teachers act on their own chains. Administrators act on any teacher's chain: pass the teacher
+ * (new chain) or the chain; the owning teacher is resolved from it.
+ */
+async function context(target: { teacherId?: string; chainId?: string } = {}): Promise<Ctx | Result> {
   const profile = await getSessionProfile();
   if (!profile) return { ok: false, message: 'Sesi tamat. Sila log masuk semula.' };
   if (!profile.is_active) return { ok: false, message: 'Akaun anda tidak aktif.' };
-  if (!(await consumeRateLimit('teacherWrite', `user:${profile.id}`))) {
+  const admin = isAdmin(profile) && Boolean(target.teacherId || target.chainId);
+  if (target.teacherId && !admin) return { ok: false, message: 'Anda tidak mempunyai kebenaran untuk tindakan ini.' };
+  if (!(await consumeRateLimit(admin ? 'adminWrite' : 'teacherWrite', `user:${profile.id}`))) {
     return { ok: false, message: 'Terlalu banyak permintaan. Sila tunggu sebentar.' };
   }
   const supabase = createServerSupabase();
+  if (admin) {
+    if (target.teacherId) {
+      if (!IdSchema.safeParse(target.teacherId).success) return { ok: false, message: 'Guru tidak ditemui.' };
+      const { data } = await supabase.from('teachers').select('id').eq('id', target.teacherId).maybeSingle();
+      if (!data) return { ok: false, message: 'Guru tidak ditemui.' };
+      return { supabase, userId: profile.id, teacherId: data.id as string, admin };
+    }
+    if (!IdSchema.safeParse(target.chainId).success) return { ok: false, message: 'Rantaian tidak ditemui.' };
+    const { data } = await supabase.from('sanad_chains').select('teacher_id').eq('id', target.chainId!).maybeSingle();
+    if (!data) return { ok: false, message: 'Rantaian tidak ditemui.' };
+    return { supabase, userId: profile.id, teacherId: data.teacher_id as string, admin };
+  }
   const { data, error } = await supabase.from('teachers').select('id').eq('profile_id', profile.id).maybeSingle();
   if (error) return dbError(error);
   if (!data) return { ok: false, message: 'Lengkapkan profil guru anda dahulu.' };
-  return { supabase, userId: profile.id, teacherId: data.id as string };
+  return { supabase, userId: profile.id, teacherId: data.id as string, admin: false };
 }
 
 const isCtx = (v: Ctx | Result): v is Ctx => 'supabase' in v;
@@ -54,6 +75,7 @@ function invalid(error: { flatten: () => { fieldErrors: Record<string, string[] 
 function refresh(chainId?: string) {
   revalidatePath('/teacher/sanad');
   if (chainId) revalidatePath(`/teacher/sanad/${chainId}`);
+  revalidatePath('/admin/teachers', 'layout');
 }
 
 async function riwayatMatches(supabase: SupabaseClient, qiraatId: string, riwayatId: string) {
@@ -106,8 +128,8 @@ async function ownsChain(c: Ctx, chainId: string) {
 // ---------------------------------------------------------------------------
 
 /** Creates a draft chain with the teacher's direct shaykh linked to the teacher's own node. */
-export async function createSanadChainAction(raw: unknown): Promise<Result> {
-  const c = await context();
+export async function createSanadChainAction(raw: unknown, teacherId?: string): Promise<Result> {
+  const c = await context({ teacherId });
   if (!isCtx(c)) return c;
   const parsed = NewSanadChainSchema.safeParse(raw);
   if (!parsed.success) return invalid(parsed.error);
@@ -116,7 +138,7 @@ export async function createSanadChainAction(raw: unknown): Promise<Result> {
     return { ok: false, fieldErrors: { riwayat_id: ['Riwayat tidak sepadan dengan qiraat.'] } };
   }
 
-  const self = await c.supabase.rpc('ensure_my_sanad_node');
+  const self = await c.supabase.rpc('ensure_my_sanad_node', c.admin ? { p_teacher_id: c.teacherId } : {});
   if (self.error) return dbError(self.error);
 
   const created = await c.supabase
@@ -158,7 +180,7 @@ export async function createSanadChainAction(raw: unknown): Promise<Result> {
 }
 
 export async function updateSanadChainAction(chainId: string, raw: unknown): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
   const parsed = SanadChainSchema.safeParse(raw);
@@ -191,7 +213,7 @@ export async function updateSanadChainAction(chainId: string, raw: unknown): Pro
 }
 
 export async function deleteSanadChainAction(chainId: string): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
   const { error, count } = await c.supabase.from('sanad_chains').delete({ count: 'exact' }).eq('id', chainId).eq('teacher_id', c.teacherId);
@@ -203,7 +225,7 @@ export async function deleteSanadChainAction(chainId: string): Promise<Result> {
 
 /** Adds a shaykh above `studentNodeId`; several shaykhs for one student form branches. */
 export async function addShaykhAction(chainId: string, studentNodeId: string, choiceRaw: unknown, edgeRaw: unknown): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (!IdSchema.safeParse(chainId).success || !IdSchema.safeParse(studentNodeId).success) return { ok: false, message: 'Rekod tidak sah.' };
   if (!(await ownsChain(c, chainId))) return { ok: false, message: 'Rantaian tidak ditemui.' };
@@ -227,7 +249,7 @@ export async function addShaykhAction(chainId: string, studentNodeId: string, ch
 
 /** Links two nodes the teacher can already see (shared nodes / alternative routes). */
 export async function linkNodesAction(chainId: string, sourceId: string, targetId: string, edgeRaw: unknown): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (![chainId, sourceId, targetId].every((id) => IdSchema.safeParse(id).success)) return { ok: false, message: 'Rekod tidak sah.' };
   if (sourceId === targetId) return { ok: false, message: 'Perawi tidak boleh meriwayatkan daripada dirinya sendiri.' };
@@ -243,7 +265,7 @@ export async function linkNodesAction(chainId: string, sourceId: string, targetI
 }
 
 export async function updateEdgeAction(chainId: string, edgeId: string, raw: unknown): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (!IdSchema.safeParse(chainId).success || !IdSchema.safeParse(edgeId).success) return { ok: false, message: 'Rekod tidak sah.' };
   if (!(await ownsChain(c, chainId))) return { ok: false, message: 'Rantaian tidak ditemui.' };
@@ -263,7 +285,7 @@ export async function updateEdgeAction(chainId: string, edgeId: string, raw: unk
 }
 
 export async function deleteEdgeAction(chainId: string, edgeId: string): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (!IdSchema.safeParse(chainId).success || !IdSchema.safeParse(edgeId).success) return { ok: false, message: 'Rekod tidak sah.' };
   if (!(await ownsChain(c, chainId))) return { ok: false, message: 'Rantaian tidak ditemui.' };
@@ -275,7 +297,7 @@ export async function deleteEdgeAction(chainId: string, edgeId: string): Promise
 }
 
 export async function updateNodeAction(chainId: string, nodeId: string, raw: unknown): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (!IdSchema.safeParse(nodeId).success) return { ok: false, message: 'Rekod tidak sah.' };
   const parsed = SanadNodeSchema.safeParse(raw);
@@ -319,7 +341,7 @@ export async function searchLinkableNodesAction(query: string): Promise<Linkable
 }
 
 export async function submitSanadChainAction(chainId: string, notes: string): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
   const { error } = await c.supabase.rpc('submit_my_sanad_chain', {
@@ -333,7 +355,7 @@ export async function submitSanadChainAction(chainId: string, notes: string): Pr
 }
 
 export async function withdrawSanadChainAction(chainId: string): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
   const { error } = await c.supabase.rpc('withdraw_my_sanad_chain', { p_chain_id: chainId });
@@ -343,7 +365,7 @@ export async function withdrawSanadChainAction(chainId: string): Promise<Result>
 }
 
 export async function reviseSanadChainAction(chainId: string): Promise<Result> {
-  const c = await context();
+  const c = await context({ chainId });
   if (!isCtx(c)) return c;
   if (!IdSchema.safeParse(chainId).success) return { ok: false, message: 'Rekod tidak sah.' };
   const { data, error } = await c.supabase.rpc('revise_my_sanad_chain', { p_chain_id: chainId });

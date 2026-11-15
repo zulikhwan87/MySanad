@@ -32,6 +32,9 @@ export interface TeacherRecord {
   /** Masked MyKad (never the full number) and whether one is stored. */
   ic_masked: string | null;
   has_ic: boolean;
+  /** Created and maintained by an administrator (no login account). */
+  managed_by_admin?: boolean;
+  profile_id?: string | null;
 }
 
 export interface TeacherSettings {
