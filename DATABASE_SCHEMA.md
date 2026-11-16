@@ -159,3 +159,6 @@ erDiagram
 
 ## Migrasi 015 — Kaedah pengambilan tidak wajib
 - `sanad_chains.transmission_method` dan `sanad_edges.transmission_relationship` boleh NULL, tanpa nilai lalai.
+
+## Migrasi 016 — Penanda profil diurus pentadbir
+- `v_public_teachers.managed_by_admin` (lajur ditambah di hujung); profil awam memaparkan penafian yang sesuai.

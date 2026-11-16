@@ -136,6 +136,8 @@ export interface PublicTeacherProfileData {
     is_featured: boolean;
     is_demo_record: boolean;
     published_at: string | null;
+    /** Entered by an administrator on the teacher's behalf (no teacher account). */
+    managed_by_admin?: boolean;
   };
   settings: { accepting_students: boolean; show_sanad_graph: boolean; allow_graph_download: boolean };
   institution: {

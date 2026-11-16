@@ -151,6 +151,8 @@ const ms = {
     accepting: 'Menerima pelajar',
     disclaimer:
       'Maklumat diserahkan oleh guru dan disemak oleh pentadbir MySanad. Lencana menunjukkan apa yang telah disemak, bukan pengisytiharan kesahihan sanad atau pentauliahan ilmiah.',
+    disclaimerManaged:
+      'Maklumat ini dimasukkan oleh pentadbir MySanad bagi pihak guru, dengan kebenaran guru atau wakilnya, dan telah disemak. Lencana menunjukkan apa yang telah disemak, bukan pengisytiharan kesahihan sanad atau pentauliahan ilmiah.',
     tabsLabel: 'Bahagian profil',
     tabProfile: 'Profil',
     tabQualifications: 'Kelayakan',
@@ -457,6 +459,8 @@ const en: Dictionary = {
     accepting: 'Accepting students',
     disclaimer:
       'Information is submitted by the teacher and reviewed by MySanad administrators. Badges show what has been reviewed; they are not a declaration of sanad authenticity or a scholarly certification.',
+    disclaimerManaged:
+      "This information was entered by MySanad administrators on the teacher's behalf, with the permission of the teacher or their representative, and has been reviewed. Badges show what has been reviewed; they are not a declaration of sanad authenticity or a scholarly certification.",
     tabsLabel: 'Profile sections',
     tabProfile: 'Profile',
     tabQualifications: 'Qualifications',
@@ -758,6 +762,8 @@ const ar: Dictionary = {
     accepting: 'يقبل طلاباً جدداً',
     disclaimer:
       'يقدّم المعلم المعلومات ويراجعها مشرفو MySanad. تبيّن الشارات ما تمت مراجعته، وليست حكماً بصحة السند ولا إجازة علمية.',
+    disclaimerManaged:
+      'أدخل مشرفو MySanad هذه المعلومات نيابةً عن المعلم وبإذنه أو إذن من ينوب عنه، وتمت مراجعتها. تبيّن الشارات ما تمت مراجعته، وليست حكماً بصحة السند ولا إجازة علمية.',
     tabsLabel: 'أقسام الملف',
     tabProfile: 'الملف',
     tabQualifications: 'المؤهلات',

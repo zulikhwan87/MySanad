@@ -91,6 +91,10 @@ describe('profiles without an account', () => {
     await asAdmin(`SELECT admin_decide_submission($1, 'approve')`, [docSub]);
 
     const found = await as(db, 'anon', null, async () => (await db.query<{ total: number }>(`SELECT search_public_teachers('Aliran Pentadbir') r`)).rows);
+    const profile = await as(db, 'anon', null, async () =>
+      (await db.query<{ p: { teacher: { managed_by_admin: boolean } } }>(`SELECT get_public_teacher_profile($1) p`, [id])).rows[0].p,
+    );
+    expect(profile.teacher.managed_by_admin).toBe(true);
     expect(JSON.stringify(found)).toContain(id);
     const docs = await as(db, 'anon', null, async () => (await db.query(`SELECT * FROM get_public_sanad_documents($1)`, [id])).rows);
     expect(docs).toHaveLength(1);

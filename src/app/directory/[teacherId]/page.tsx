@@ -110,7 +110,7 @@ export default async function TeacherProfilePage({ params }: Props) {
       <aside className="mt-4 flex gap-3 rounded-xl border border-forest-200 bg-forest-50 p-4 text-sm text-forest-800">
         <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
         <p>
-          {t.profile.disclaimer}
+          {teacher.managed_by_admin ? t.profile.disclaimerManaged : t.profile.disclaimer}
         </p>
       </aside>
     </div>
