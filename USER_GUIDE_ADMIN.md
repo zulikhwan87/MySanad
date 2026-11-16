@@ -29,3 +29,20 @@ Untuk guru yang tidak dapat mendaftar sendiri (contohnya warga emas):
 
 Pentadbir juga boleh menyunting profil guru yang mendaftar sendiri melalui **Sunting data guru**. Perubahan disimpan terus,
 direkod dalam log audit, dan guru menerima notifikasi (sekali setiap 30 minit). Masukkan data hanya dengan kebenaran guru.
+
+## Rantaian rujukan
+
+Portal Pentadbir → **Rantaian Rujukan**. Bahagian atas sanad yang lazim (contohnya dari seorang syeikh hingga Rasulullah SAW)
+disediakan sekali oleh pentadbir supaya guru tidak perlu menaipnya semula.
+
+1. **Cipta rantaian rujukan** (pilih perawi permulaan, kemudian tambah guru-gurunya ke atas satu demi satu), atau
+   **Salin daripada rantaian yang diluluskan** (bahagian dari perawi yang dipilih hingga ke atas disalin sebagai draf).
+2. Semak **Senarai semakan perawi** satu demi satu. Betulkan, ganti atau buang perawi dalam graf jika perlu.
+3. Klik **Saya telah menyemak — Aktifkan**. Hanya rantaian aktif kelihatan kepada guru.
+4. Untuk menyunting rantaian aktif, klik **Nyahaktifkan untuk menyunting**, buat pembetulan, kemudian aktifkan semula.
+5. **Padam** rantaian yang tidak aktif bila-bila masa.
+
+Guru menyalin bahagian yang diperlukan ke dalam rantaian mereka; salinan itu disemak bersama rantaian guru di Barisan Semakan.
+Menyunting, menyahaktifkan atau memadam rantaian rujukan **tidak** mengubah rantaian guru yang sudah menyalinnya.
+
+Untuk mematikan fungsi ini sepenuhnya: **Tetapan** → nyahtanda **Rantaian rujukan untuk guru**.

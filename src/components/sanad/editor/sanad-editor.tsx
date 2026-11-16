@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Link2, Loader2, Pencil, Plus, Replace, Trash2, UserMinus } from 'lucide-react';
+import { BookCopy, Link2, Loader2, Pencil, Plus, Replace, Trash2, UserMinus } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { SelectField } from '@/components/forms/fields';
@@ -10,6 +10,8 @@ import { SanadGraphLazy as SanadGraph } from '@/components/sanad/sanad-graph-laz
 import { NodePicker } from './node-picker';
 import { NodeFields } from './node-fields';
 import { EdgeFields, EMPTY_EDGE } from './edge-fields';
+import { ReferenceAttachPanel } from './reference-attach';
+import type { ActiveReference } from '@/lib/data/reference-chains';
 import {
   addShaykhAction,
   deleteEdgeAction,
@@ -29,6 +31,7 @@ type Panel =
   | { kind: 'link'; node: GraphNodeData }
   | { kind: 'edit-node'; node: GraphNodeData }
   | { kind: 'replace-node'; node: GraphNodeData }
+  | { kind: 'attach'; node: GraphNodeData }
   | { kind: 'edit-edge'; edge: GraphEdgeData }
   | null;
 
@@ -63,7 +66,22 @@ function edgeToInput(e: GraphEdgeData): SanadEdgeInput {
   };
 }
 
-export function SanadEditor({ chainId, graph, editable, title }: { chainId: string; graph: SanadGraphData; editable: boolean; title: string }) {
+export function SanadEditor({
+  chainId,
+  graph,
+  editable,
+  title,
+  references = [],
+  riwayatId,
+}: {
+  chainId: string;
+  graph: SanadGraphData;
+  editable: boolean;
+  title: string;
+  /** Active reference chains the teacher may copy from (empty when the feature is off). */
+  references?: ActiveReference[];
+  riwayatId?: string | null;
+}) {
   const router = useRouter();
   const [panel, setPanel] = useState<Panel>(null);
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -115,6 +133,11 @@ export function SanadEditor({ chainId, graph, editable, title }: { chainId: stri
         <Button size="sm" onClick={() => open({ kind: 'add-shaykh', node: n })}>
           <Plus aria-hidden /> Tambah guru kepada perawi ini
         </Button>
+        {references.length ? (
+          <Button size="sm" variant="outline" onClick={() => open({ kind: 'attach', node: n })}>
+            <BookCopy aria-hidden /> Sambung dengan rantaian rujukan
+          </Button>
+        ) : null}
         <Button size="sm" variant="outline" onClick={() => open({ kind: 'link', node: n })}>
           <Link2 aria-hidden /> Sambung kepada murid dalam rantaian
         </Button>
@@ -183,7 +206,20 @@ export function SanadEditor({ chainId, graph, editable, title }: { chainId: stri
         renderEdgeActions={edgeActions}
       />
 
-      {panel ? (
+      {panel?.kind === 'attach' ? (
+        <ReferenceAttachPanel
+          chainId={chainId}
+          student={{ id: panel.node.id, name: panel.node.full_name_rumi }}
+          references={references}
+          riwayatId={riwayatId}
+          onCancel={() => setPanel(null)}
+          onDone={(res) => {
+            setResult(res);
+            setPanel(null);
+            router.refresh();
+          }}
+        />
+      ) : panel ? (
         <section className="space-y-4 rounded-2xl border-2 border-primary/30 bg-card p-5 shadow-soft" aria-label="Penyunting">
           {panel.kind === 'add-shaykh' ? (
             <>

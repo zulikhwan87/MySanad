@@ -45,6 +45,7 @@ npm run test:e2e               # ujian E2E desktop + mudah alih (memulakan `next
 | `014_qiraat_additions_simple_sanad.sql` | qiraat Abu Ja'far, Ya'qub, Khalaf, Qiraat Tujuh; riwayat tambahan; perawi nama sahaja; kaedah pengambilan |
 | `015_optional_transmission_method.sql` | kaedah pengambilan tidak wajib |
 | `016_public_managed_flag.sql` | penafian profil yang dimasukkan pentadbir |
+| `017_reference_chains.sql` | rantaian rujukan (draf/aktif), salinan ke rantaian guru, suis tetapan |
 
 Pilihan A — Supabase CLI:
 ```bash

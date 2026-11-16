@@ -11,6 +11,7 @@ import { ChainDetailsForm } from '@/components/sanad/editor/chain-details-form';
 import { NotConfigured } from '@/components/public/states';
 import { getMySanadChain } from '@/lib/data/sanad';
 import { getTeacherReferenceData } from '@/lib/data/teacher';
+import { getActiveReferences } from '@/lib/data/reference-chains';
 import { UuidSchema } from '@/lib/validations/search';
 
 export const metadata: Metadata = { title: 'Editor Sanad (Pentadbir)' };
@@ -18,7 +19,7 @@ export const metadata: Metadata = { title: 'Editor Sanad (Pentadbir)' };
 export default async function AdminSanadEditorPage({ params }: { params: { teacherId: string; chainId: string } }) {
   if (!UuidSchema.safeParse(params.teacherId).success || !UuidSchema.safeParse(params.chainId).success) notFound();
   const base = `/admin/teachers/${params.teacherId}/sunting`;
-  const [detail, reference] = await Promise.all([getMySanadChain(params.chainId, params.teacherId), getTeacherReferenceData()]);
+  const [detail, reference, references] = await Promise.all([getMySanadChain(params.chainId, params.teacherId), getTeacherReferenceData(), getActiveReferences()]);
   if (detail === 'not-found') notFound();
   if (!detail || !reference) return <NotConfigured />;
   const { chain } = detail;
@@ -62,7 +63,7 @@ export default async function AdminSanadEditorPage({ params }: { params: { teach
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <SanadEditor chainId={chain.id} graph={detail.graph} editable={editable} title={chain.title} />
+          <SanadEditor chainId={chain.id} graph={detail.graph} editable={editable} title={chain.title} references={references} riwayatId={chain.riwayat_id} />
         </CardContent>
       </Card>
 

@@ -27,6 +27,7 @@ export const getPublicSettings = cache(async (): Promise<PublicSettings> => {
 
 export interface AdminSettings extends PublicSettings {
   max_documents_per_teacher: number;
+  reference_chains_enabled: boolean;
   updated: Record<string, { at: string; by: string | null }>;
 }
 
@@ -40,6 +41,7 @@ export async function getAdminSettings(): Promise<AdminSettings> {
     announcement: typeof v.announcement === 'string' ? v.announcement : '',
     contact_email: typeof v.contact_email === 'string' ? v.contact_email : null,
     max_documents_per_teacher: typeof v.max_documents_per_teacher === 'number' ? v.max_documents_per_teacher : 50,
+    reference_chains_enabled: v.reference_chains_enabled === true,
     updated: Object.fromEntries(rows.map((r) => [r.key, { at: r.updated_at, by: r.editor?.full_name ?? null }])),
   };
 }

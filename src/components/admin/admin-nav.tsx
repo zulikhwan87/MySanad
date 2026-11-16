@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Building2, ClipboardCheck, Database, GitBranch, LayoutDashboard, ScrollText, Settings, Users, UsersRound } from 'lucide-react';
+import { BarChart3, Building2, ClipboardCheck, Database, GitBranch, Link2, LayoutDashboard, ScrollText, Settings, Users, UsersRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ITEMS = [
@@ -10,6 +10,7 @@ const ITEMS = [
   { href: '/admin/verification', label: 'Barisan Semakan', icon: ClipboardCheck },
   { href: '/admin/teachers', label: 'Guru', icon: UsersRound },
   { href: '/admin/sanad', label: 'Sanad', icon: GitBranch },
+  { href: '/admin/reference-chains', label: 'Rantaian Rujukan', icon: Link2 },
   { href: '/admin/institutions', label: 'Institusi', icon: Building2 },
   { href: '/admin/reference-data', label: 'Data Rujukan', icon: Database },
   { href: '/admin/analytics', label: 'Analitik', icon: BarChart3 },

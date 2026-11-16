@@ -162,3 +162,13 @@ erDiagram
 
 ## Migrasi 016 — Penanda profil diurus pentadbir
 - `v_public_teachers.managed_by_admin` (lajur ditambah di hujung); profil awam memaparkan penafian yang sesuai.
+
+## Migrasi 017 — Rantaian rujukan
+- `reference_chains` (draf / aktif / tidak aktif, `root_node_id` = perawi permulaan) dan `reference_chain_links`.
+- Pentadbir mengurus semuanya; guru hanya membaca rantaian **aktif** semasa tetapan `reference_chains_enabled` hidup.
+- Hubungan dikunci semasa rantaian aktif (nyahaktifkan untuk menyunting). Status diubah melalui
+  `admin_set_reference_chain_status()`; pengaktifan memastikan semua perawi bersambung dan menjadikan perawinya disahkan.
+- `admin_create_reference_from_chain()`: salin bahagian atas rantaian yang diluluskan sebagai draf.
+- `attach_reference_chain()`: **menyalin** bahagian rujukan ke dalam rantaian guru (draf) sebagai hubungan biasa yang disemak
+  bersama rantaian. Suntingan atau pemadaman rujukan kemudian tidak mengubah rantaian guru.
+- Boleh dibuang sepenuhnya tanpa menjejaskan data guru: padam dua jadual dan fungsi di atas.

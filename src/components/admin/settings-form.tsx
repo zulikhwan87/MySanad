@@ -58,6 +58,13 @@ export function SettingsForm({ initial, editable }: { initial: SettingsInput; ed
           error={err('contact_email')}
           onChange={(e) => setV({ ...v, contact_email: e.target.value })}
         />
+        <CheckboxField
+          id="s-ref"
+          label="Rantaian rujukan untuk guru"
+          description="Jika dimatikan, guru tidak melihat atau menyalin rantaian rujukan. Rantaian yang sudah disalin tidak terjejas."
+          checked={Boolean(v.reference_chains_enabled)}
+          onChange={(e) => setV({ ...v, reference_chains_enabled: e.target.checked })}
+        />
         <TextField
           id="s-max"
           label="Had dokumen bagi setiap guru"

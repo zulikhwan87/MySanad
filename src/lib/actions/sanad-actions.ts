@@ -440,6 +440,30 @@ export async function removeNodeFromChainAction(chainId: string, nodeId: string)
   return { ok: true, message: 'Perawi dibuang daripada rantaian. Pastikan semua perawi lain masih bersambung sebelum menghantar.' };
 }
 
+/** Copies part of an active reference chain above `studentNodeId` (the chosen perawi and everyone above). */
+export async function attachReferenceChainAction(chainId: string, studentNodeId: string, referenceId: string, fromNodeId: string): Promise<Result> {
+  const c = await context({ chainId });
+  if (!isCtx(c)) return c;
+  if (![chainId, studentNodeId, referenceId, fromNodeId].every((id) => IdSchema.safeParse(id).success)) {
+    return { ok: false, message: 'Pilih rantaian rujukan dan perawi.' };
+  }
+  const { data, error } = await c.supabase.rpc('attach_reference_chain', {
+    p_chain_id: chainId,
+    p_student_node_id: studentNodeId,
+    p_reference_chain_id: referenceId,
+    p_from_node_id: fromNodeId,
+  });
+  if (error) return dbError(error);
+  refresh(chainId);
+  const added = Number(data ?? 0);
+  return {
+    ok: true,
+    message: added
+      ? `${added} hubungan disalin daripada rantaian rujukan. Semak semula sebelum menghantar.`
+      : 'Tiada hubungan baharu; bahagian ini sudah ada dalam rantaian anda.',
+  };
+}
+
 export interface LinkableNode {
   id: string;
   full_name_rumi: string;

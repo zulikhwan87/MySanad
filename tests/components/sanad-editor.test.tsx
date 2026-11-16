@@ -13,6 +13,7 @@ const actions = vi.hoisted(() => ({
   linkNodesAction: vi.fn(),
   updateEdgeAction: vi.fn(),
   searchLinkableNodesAction: vi.fn(async () => []),
+  attachReferenceChainAction: vi.fn(async () => ({ ok: true, message: '3 hubungan disalin.' })),
 }));
 vi.mock('@/lib/actions/sanad-actions', () => actions);
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
@@ -30,6 +31,8 @@ vi.mock('@/components/sanad/sanad-graph-lazy', () => ({
 }));
 
 import { SanadEditor } from '@/components/sanad/editor/sanad-editor';
+import { perawiFrom } from '@/components/sanad/editor/reference-attach';
+import type { ActiveReference } from '@/lib/data/reference-chains';
 
 const CHAIN = '22222222-2222-4222-8222-222222222222';
 const graph: SanadGraphData = {
@@ -68,5 +71,41 @@ describe('SanadEditor corrections', () => {
   it('shows no editing actions on a locked chain', () => {
     render(<SanadEditor chainId={CHAIN} graph={graph} editable={false} title="Sanad" />);
     expect(screen.queryByRole('button', { name: /Betulkan nama/ })).toBeNull();
+  });
+
+  it('copies from an active reference only after choosing the perawi, with a preview of what is copied', async () => {
+    const ref: ActiveReference = {
+      id: '33333333-3333-4333-8333-333333333333',
+      title: 'Rujukan Hafs',
+      riwayat_id: null,
+      riwayat: null,
+      tariq: null,
+      perawi: [
+        { id: 'r0', name: 'Syeikh Permulaan', arabic: null, depth: 0 },
+        { id: 'r1', name: 'Syeikh Tengah', arabic: null, depth: 1 },
+        { id: 'r2', name: 'Imam Atas', arabic: null, depth: 2 },
+      ],
+      links: [
+        { source: 'r1', target: 'r0' },
+        { source: 'r2', target: 'r1' },
+      ],
+    };
+    expect(perawiFrom(ref, 'r1').map((p) => p.id)).toEqual(['r1', 'r2']);
+
+    render(<SanadEditor chainId={CHAIN} graph={graph} editable title="Sanad" references={[ref]} />);
+    fireEvent.click(screen.getAllByRole('button', { name: /Sambung dengan rantaian rujukan/ })[0]);
+    const copy = screen.getByRole('button', { name: /Salin ke rantaian saya/ });
+    expect((copy as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText(/Guru kepada/), { target: { value: 'r0' } });
+    expect(screen.getByText(/Akan disalin \(3 perawi\)/)).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(copy);
+    });
+    expect(actions.attachReferenceChainAction).toHaveBeenCalledWith(CHAIN, 'shaykh', ref.id, 'r0');
+  });
+
+  it('hides the reference option when none are active', () => {
+    render(<SanadEditor chainId={CHAIN} graph={graph} editable title="Sanad" />);
+    expect(screen.queryByRole('button', { name: /Sambung dengan rantaian rujukan/ })).toBeNull();
   });
 });

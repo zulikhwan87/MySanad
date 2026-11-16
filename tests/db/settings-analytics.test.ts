@@ -27,7 +27,7 @@ describe('system settings', () => {
     const rows = await as(db, 'anon', null, async () => (await db.query<{ key: string }>(`SELECT key FROM system_settings ORDER BY key`)).rows);
     expect(rows.map((r) => r.key)).toEqual(['announcement', 'contact_email', 'registration_open']);
     const admin = await as(db, 'authenticated', verifier, async () => (await db.query(`SELECT key FROM system_settings`)).rows);
-    expect(admin).toHaveLength(4);
+    expect(admin).toHaveLength(5);
   });
 
   it('lets only the Super Admin change settings, with typed validation', async () => {

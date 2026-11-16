@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SanadNodeSchema } from './sanad';
+import { NodeChoiceSchema, SanadNodeSchema } from './sanad';
 
 const ARABIC = /[؀-ۿ]/;
 const optional = (max: number) =>
@@ -85,5 +85,29 @@ export const SettingsSchema = z.object({
     z.string().trim().email('Alamat emel tidak sah.').max(254).nullable(),
   ),
   max_documents_per_teacher: z.coerce.number().int('Nombor bulat sahaja.').min(1).max(200),
+  reference_chains_enabled: z.boolean(),
 });
 export type SettingsInput = z.input<typeof SettingsSchema>;
+
+const optionalId = z.preprocess((v) => (v === '' || v === null ? undefined : v), z.string().uuid('Pilihan tidak sah.').optional());
+
+export const ReferenceChainMetaSchema = z.object({
+  title: z.string().trim().min(3, 'Tajuk sekurang-kurangnya 3 aksara.').max(255),
+  qiraat_id: optionalId,
+  riwayat_id: optionalId,
+  tariq_id: optionalId,
+  notes: optional(2000),
+});
+
+export const NewReferenceChainSchema = z.object({
+  meta: ReferenceChainMetaSchema,
+  root: NodeChoiceSchema,
+});
+
+export const ReferenceFromChainSchema = z.object({
+  title: z.string().trim().min(3, 'Tajuk sekurang-kurangnya 3 aksara.').max(255),
+  chain_id: z.string().uuid('Pilih rantaian.'),
+  root_node_id: z.string().uuid('Pilih perawi permulaan.'),
+});
+
+export type ReferenceChainMetaInput = z.input<typeof ReferenceChainMetaSchema>;

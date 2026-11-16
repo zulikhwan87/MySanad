@@ -39,6 +39,7 @@ export default async function SettingsPage() {
               announcement: s.announcement,
               contact_email: s.contact_email ?? '',
               max_documents_per_teacher: s.max_documents_per_teacher,
+              reference_chains_enabled: s.reference_chains_enabled,
             }}
           />
         </CardContent>

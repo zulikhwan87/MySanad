@@ -27,7 +27,10 @@
    - **Ganti dengan perawi lain**: pindahkan semua hubungannya kepada rekod lain;
    - **Buang daripada rantaian**: padam hubungannya dalam rantaian ini.
    Klik garis hubungan untuk menyunting kaedah pengambilan.
-6. Untuk membetulkan rantaian yang telah diluluskan, klik **Betulkan sanad**. Salinan pembetulan dicipta; versi yang diluluskan kekal
+6. **Rantaian rujukan.** Jika pentadbir telah menyediakan rantaian rujukan, klik perawi teratas yang anda masukkan →
+   **Sambung dengan rantaian rujukan**, pilih rantaian dan perawi yang menjadi gurunya. Perawi itu dan semua di atasnya disalin ke
+   dalam rantaian anda; semak senarai yang dipaparkan sebelum menyalin.
+7. Untuk membetulkan rantaian yang telah diluluskan, klik **Betulkan sanad**. Salinan pembetulan dicipta; versi yang diluluskan kekal
    dipaparkan sehingga pembetulan dihantar dan diluluskan semula oleh pentadbir. Pentadbir boleh melakukan perkara yang sama melalui
    *Sunting data guru → Sanad*.
 
