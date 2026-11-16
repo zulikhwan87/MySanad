@@ -156,3 +156,6 @@ erDiagram
 - `sanad_nodes.generation_category` kini boleh NULL: guru hanya memasukkan nama perawi.
 - Kaedah pengambilan (semua secara talaqqi musyafahah): bacaan secara hafazan (ghaiban, lalai), melihat mushaf,
   atau dalam talian (online). Nilai lama dikekalkan sehingga disunting.
+
+## Migrasi 015 — Kaedah pengambilan tidak wajib
+- `sanad_chains.transmission_method` dan `sanad_edges.transmission_relationship` boleh NULL, tanpa nilai lalai.

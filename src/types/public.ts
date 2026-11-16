@@ -97,7 +97,7 @@ export interface PublicSanadChain {
   riwayat: string;
   riwayat_arabic: string | null;
   tariq: string | null;
-  transmission_method: string;
+  transmission_method: string | null;
   immediate_teacher_name_rumi: string;
   immediate_teacher_name_arabic: string | null;
   ijazah_date: string | null;

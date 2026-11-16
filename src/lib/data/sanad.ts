@@ -118,7 +118,7 @@ export interface MyChainDetail {
     qiraat_id: string;
     riwayat_id: string;
     tariq_id: string | null;
-    transmission_method: string;
+    transmission_method: string | null;
     ijazah_date: string | null;
     ijazah_location: string | null;
     public_notes: string | null;

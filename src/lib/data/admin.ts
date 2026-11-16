@@ -209,7 +209,7 @@ export interface AdminChainBundle {
     teacher_id: string;
     verification_status: VerificationStatus;
     is_public: boolean;
-    transmission_method: string;
+    transmission_method: string | null;
     ijazah_date: string | null;
     ijazah_location: string | null;
     public_notes: string | null;

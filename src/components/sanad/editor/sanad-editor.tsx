@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Link2, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Link2, Loader2, Pencil, Plus, Replace, Trash2, UserMinus } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { SelectField } from '@/components/forms/fields';
@@ -14,10 +14,12 @@ import {
   addShaykhAction,
   deleteEdgeAction,
   linkNodesAction,
+  removeNodeFromChainAction,
+  replaceNodeAction,
   updateEdgeAction,
   updateNodeAction,
 } from '@/lib/actions/sanad-actions';
-import { DEFAULT_TRANSMISSION, NodeChoiceSchema, SanadEdgeSchema, SanadNodeSchema, type NodeChoiceInput, type SanadEdgeInput, type SanadNodeInput } from '@/lib/validations/sanad';
+import { NodeChoiceSchema, SanadEdgeSchema, SanadNodeSchema, type NodeChoiceInput, type SanadEdgeInput, type SanadNodeInput } from '@/lib/validations/sanad';
 import { issuesByPath } from '@/lib/validations/issues';
 import type { ActionResult } from '@/lib/validations/auth';
 import type { GraphEdgeData, GraphNodeData, SanadGraphData } from '@/lib/sanad/graph';
@@ -26,6 +28,7 @@ type Panel =
   | { kind: 'add-shaykh'; node: GraphNodeData }
   | { kind: 'link'; node: GraphNodeData }
   | { kind: 'edit-node'; node: GraphNodeData }
+  | { kind: 'replace-node'; node: GraphNodeData }
   | { kind: 'edit-edge'; edge: GraphEdgeData }
   | null;
 
@@ -46,9 +49,11 @@ function nodeToInput(n: GraphNodeData): SanadNodeInput {
   };
 }
 
+const isVerified = (n: GraphNodeData) => ['approved', 'published', 'submitted', 'under_review'].includes(n.verification_status ?? '');
+
 function edgeToInput(e: GraphEdgeData): SanadEdgeInput {
   return {
-    transmission_relationship: e.transmission_relationship ?? DEFAULT_TRANSMISSION,
+    transmission_relationship: e.transmission_relationship ?? '',
     riwayat_context: e.riwayat_context ?? '',
     transmission_date_text: e.transmission_date_text ?? '',
     transmission_location: e.transmission_location ?? '',
@@ -113,10 +118,26 @@ export function SanadEditor({ chainId, graph, editable, title }: { chainId: stri
         <Button size="sm" variant="outline" onClick={() => open({ kind: 'link', node: n })}>
           <Link2 aria-hidden /> Sambung kepada murid dalam rantaian
         </Button>
-        {n.is_mine && !n.is_self && ['draft', 'revision_required'].includes(n.verification_status ?? '') ? (
-          <Button size="sm" variant="ghost" onClick={() => open({ kind: 'edit-node', node: n })}>
-            <Pencil aria-hidden /> Sunting maklumat perawi
-          </Button>
+        {!n.is_self ? (
+          <>
+            <Button size="sm" variant="outline" onClick={() => open({ kind: 'edit-node', node: n })}>
+              <Pencil aria-hidden /> Betulkan nama / maklumat
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => open({ kind: 'replace-node', node: n })}>
+              <Replace aria-hidden /> Ganti dengan perawi lain
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() =>
+                window.confirm(`Buang ${n.full_name_rumi} daripada rantaian ini? Hubungannya dalam rantaian ini akan dipadam.`) &&
+                run(() => removeNodeFromChainAction(chainId, n.id))
+              }
+            >
+              <UserMinus aria-hidden /> Buang daripada rantaian
+            </Button>
+          </>
         ) : null}
       </div>
     ) : null;
@@ -181,8 +202,23 @@ export function SanadEditor({ chainId, graph, editable, title }: { chainId: stri
           ) : null}
           {panel.kind === 'edit-node' && node ? (
             <>
-              <h3 className="font-semibold text-forest-900">Sunting perawi</h3>
+              <h3 className="font-semibold text-forest-900">Betulkan perawi: {panel.node.full_name_rumi}</h3>
+              {isVerified(panel.node) ? (
+                <Alert variant="info">
+                  Perawi ini telah disahkan. Pembetulan anda digunakan dalam rantaian ini sahaja dan akan disemak semula oleh pentadbir
+                  apabila rantaian dihantar.
+                </Alert>
+              ) : null}
               <NodeFields value={node} onChange={setNode} errors={errors} prefix="node." />
+            </>
+          ) : null}
+          {panel.kind === 'replace-node' ? (
+            <>
+              <h3 className="font-semibold text-forest-900">Ganti {panel.node.full_name_rumi} dengan perawi lain</h3>
+              <p className="text-sm text-muted-foreground">
+                Semua hubungan perawi ini dalam rantaian ini akan dipindahkan kepada perawi yang dipilih. Rantaian lain tidak terjejas.
+              </p>
+              <NodePicker value={choice} onChange={setChoice} errors={errors} prefix="node." />
             </>
           ) : null}
           {panel.kind === 'edit-edge' ? (
@@ -209,6 +245,9 @@ export function SanadEditor({ chainId, graph, editable, title }: { chainId: stri
                 } else if (panel.kind === 'edit-node' && node) {
                   if (!validate([['node.', SanadNodeSchema, node]])) return;
                   run(() => updateNodeAction(chainId, panel.node.id, node));
+                } else if (panel.kind === 'replace-node') {
+                  if (!validate([['node.', NodeChoiceSchema, choice]])) return;
+                  run(() => replaceNodeAction(chainId, panel.node.id, choice));
                 } else if (panel.kind === 'edit-edge') {
                   if (!validate([['edge.', SanadEdgeSchema, edge]])) return;
                   run(() => updateEdgeAction(chainId, panel.edge.id, edge));

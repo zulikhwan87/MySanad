@@ -102,7 +102,7 @@ function nodeRow(node: z.infer<typeof SanadNodeSchema>) {
 
 function edgeRow(edge: z.infer<typeof SanadEdgeSchema>) {
   return {
-    transmission_relationship: edge.transmission_relationship,
+    transmission_relationship: edge.transmission_relationship ?? null,
     riwayat_context: edge.riwayat_context ?? null,
     transmission_date_text: edge.transmission_date_text ?? null,
     transmission_location: edge.transmission_location ?? null,
@@ -149,7 +149,7 @@ export async function createSanadChainAction(raw: unknown, teacherId?: string): 
       qiraat_id: chain.qiraat_id,
       riwayat_id: chain.riwayat_id,
       tariq_id: chain.tariq_id ?? null,
-      transmission_method: chain.transmission_method,
+      transmission_method: chain.transmission_method ?? null,
       ijazah_date: chain.ijazah_date ?? null,
       ijazah_location: chain.ijazah_location ?? null,
       public_notes: chain.public_notes ?? null,
@@ -196,7 +196,7 @@ export async function updateSanadChainAction(chainId: string, raw: unknown): Pro
       qiraat_id: v.qiraat_id,
       riwayat_id: v.riwayat_id,
       tariq_id: v.tariq_id ?? null,
-      transmission_method: v.transmission_method,
+      transmission_method: v.transmission_method ?? null,
       ijazah_date: v.ijazah_date ?? null,
       ijazah_location: v.ijazah_location ?? null,
       public_notes: v.public_notes ?? null,
@@ -296,23 +296,148 @@ export async function deleteEdgeAction(chainId: string, edgeId: string): Promise
   return { ok: true, message: 'Hubungan dipadam.' };
 }
 
+async function editableChain(c: Ctx, chainId: string) {
+  const { data } = await c.supabase
+    .from('sanad_chains')
+    .select('id, verification_status')
+    .eq('id', chainId)
+    .eq('teacher_id', c.teacherId)
+    .maybeSingle();
+  if (!data) return 'missing' as const;
+  return ['draft', 'revision_required'].includes(data.verification_status as string) ? ('ok' as const) : ('locked' as const);
+}
+
+const LOCKED: Result = {
+  ok: false,
+  message: 'Rantaian ini dikunci. Klik "Betulkan sanad" (atau tarik balik jika belum disemak) untuk membuat pembetulan.',
+};
+
+/** Points every edge of this chain that uses `oldId` to `newId` instead. Other chains are untouched. */
+async function swapNodeInChain(c: Ctx, chainId: string, oldId: string, newId: string) {
+  const a = await c.supabase.from('sanad_edges').update({ source_node_id: newId }).eq('sanad_chain_id', chainId).eq('source_node_id', oldId);
+  if (a.error) return a.error;
+  const b = await c.supabase.from('sanad_edges').update({ target_node_id: newId }).eq('sanad_chain_id', chainId).eq('target_node_id', oldId);
+  if (b.error) {
+    await c.supabase.from('sanad_edges').update({ source_node_id: oldId }).eq('sanad_chain_id', chainId).eq('source_node_id', newId);
+    return b.error;
+  }
+  return null;
+}
+
+async function loadChainNode(c: Ctx, chainId: string, nodeId: string) {
+  const { data: node } = await c.supabase
+    .from('sanad_nodes')
+    .select('id, created_by, verification_status, linked_teacher_id')
+    .eq('id', nodeId)
+    .maybeSingle();
+  if (!node) return null;
+  const { count } = await c.supabase
+    .from('sanad_edges')
+    .select('id', { count: 'exact', head: true })
+    .eq('sanad_chain_id', chainId)
+    .or(`source_node_id.eq.${nodeId},target_node_id.eq.${nodeId}`);
+  return count ? node : null;
+}
+
+/**
+ * Corrects a transmitter's details in this chain.
+ * - A draft record the caller entered (not used by any other chain) is edited in place.
+ * - A record that is already verified, or shared with other chains, is never changed for everyone:
+ *   a corrected copy is created and used in THIS chain only. It is reviewed again by an
+ *   administrator with the chain; the approved version stays public until then.
+ */
 export async function updateNodeAction(chainId: string, nodeId: string, raw: unknown): Promise<Result> {
   const c = await context({ chainId });
   if (!isCtx(c)) return c;
-  if (!IdSchema.safeParse(nodeId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  if (!IdSchema.safeParse(chainId).success || !IdSchema.safeParse(nodeId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  const chain = await editableChain(c, chainId);
+  if (chain === 'missing') return { ok: false, message: 'Rantaian tidak ditemui.' };
+  if (chain === 'locked') return LOCKED;
   const parsed = SanadNodeSchema.safeParse(raw);
   if (!parsed.success) return invalid(parsed.error);
-  const { data, error } = await c.supabase
-    .from('sanad_nodes')
-    .update(nodeRow(parsed.data))
-    .eq('id', nodeId)
-    .eq('created_by', c.userId)
-    .select('id')
-    .maybeSingle();
+  const node = await loadChainNode(c, chainId, nodeId);
+  if (!node) return { ok: false, message: 'Perawi tidak ditemui dalam rantaian ini.' };
+  if (node.linked_teacher_id) return { ok: false, message: 'Nama guru sendiri dikemas kini melalui profil guru.' };
+
+  const ownDraft = ['draft', 'revision_required'].includes(node.verification_status as string) && (node.created_by === c.userId || c.admin);
+  let usedElsewhere = false;
+  if (ownDraft) {
+    const { count } = await c.supabase
+      .from('sanad_edges')
+      .select('id', { count: 'exact', head: true })
+      .neq('sanad_chain_id', chainId)
+      .or(`source_node_id.eq.${nodeId},target_node_id.eq.${nodeId}`);
+    usedElsewhere = Boolean(count);
+  }
+
+  if (ownDraft && !usedElsewhere) {
+    const { data, error } = await c.supabase.from('sanad_nodes').update(nodeRow(parsed.data)).eq('id', nodeId).select('id').maybeSingle();
+    if (error) return dbError(error);
+    if (!data) return { ok: false, message: 'Perawi tidak dapat dikemas kini.' };
+    refresh(chainId);
+    return { ok: true, message: 'Maklumat perawi dibetulkan.' };
+  }
+
+  const { data: copy, error } = await c.supabase.from('sanad_nodes').insert(nodeRow(parsed.data)).select('id').single();
   if (error) return dbError(error);
-  if (!data) return { ok: false, message: 'Hanya perawi yang anda cipta dan belum disemak boleh disunting.' };
+  const swapError = await swapNodeInChain(c, chainId, nodeId, copy.id as string);
+  if (swapError) {
+    await c.supabase.from('sanad_nodes').delete().eq('id', copy.id);
+    return dbError(swapError);
+  }
   refresh(chainId);
-  return { ok: true, message: 'Maklumat perawi disimpan.' };
+  return {
+    ok: true,
+    message: 'Pembetulan disimpan untuk rantaian ini dan akan disemak semula oleh pentadbir apabila rantaian dihantar.',
+    id: copy.id as string,
+  };
+}
+
+/** Replaces a wrongly chosen transmitter with another (an existing record or a new one), in this chain only. */
+export async function replaceNodeAction(chainId: string, nodeId: string, choiceRaw: unknown): Promise<Result> {
+  const c = await context({ chainId });
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success || !IdSchema.safeParse(nodeId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  const chain = await editableChain(c, chainId);
+  if (chain === 'missing') return { ok: false, message: 'Rantaian tidak ditemui.' };
+  if (chain === 'locked') return LOCKED;
+  const choice = NodeChoiceSchema.safeParse(choiceRaw);
+  if (!choice.success) return invalid(choice.error);
+  const node = await loadChainNode(c, chainId, nodeId);
+  if (!node) return { ok: false, message: 'Perawi tidak ditemui dalam rantaian ini.' };
+  if (node.linked_teacher_id) return { ok: false, message: 'Guru sendiri tidak boleh diganti.' };
+  if (choice.data.mode === 'existing' && choice.data.node_id === nodeId) return { ok: false, message: 'Pilih perawi yang berbeza.' };
+
+  const next = await resolveNode(c, choice.data);
+  if ('ok' in next) return next;
+  const swapError = await swapNodeInChain(c, chainId, nodeId, next.id);
+  if (swapError) {
+    if (next.created) await c.supabase.from('sanad_nodes').delete().eq('id', next.id);
+    return dbError(swapError);
+  }
+  refresh(chainId);
+  return { ok: true, message: 'Perawi diganti dalam rantaian ini.', id: next.id };
+}
+
+/** Removes a transmitter from this chain (all of its links in this chain). */
+export async function removeNodeFromChainAction(chainId: string, nodeId: string): Promise<Result> {
+  const c = await context({ chainId });
+  if (!isCtx(c)) return c;
+  if (!IdSchema.safeParse(chainId).success || !IdSchema.safeParse(nodeId).success) return { ok: false, message: 'Rekod tidak sah.' };
+  const chain = await editableChain(c, chainId);
+  if (chain === 'missing') return { ok: false, message: 'Rantaian tidak ditemui.' };
+  if (chain === 'locked') return LOCKED;
+  const node = await loadChainNode(c, chainId, nodeId);
+  if (!node) return { ok: false, message: 'Perawi tidak ditemui dalam rantaian ini.' };
+  if (node.linked_teacher_id) return { ok: false, message: 'Guru sendiri tidak boleh dibuang daripada rantaian.' };
+  const { error } = await c.supabase
+    .from('sanad_edges')
+    .delete()
+    .eq('sanad_chain_id', chainId)
+    .or(`source_node_id.eq.${nodeId},target_node_id.eq.${nodeId}`);
+  if (error) return dbError(error);
+  refresh(chainId);
+  return { ok: true, message: 'Perawi dibuang daripada rantaian. Pastikan semua perawi lain masih bersambung sebelum menghantar.' };
 }
 
 export interface LinkableNode {

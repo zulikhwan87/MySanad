@@ -10,7 +10,7 @@ import { ChainFields } from './chain-fields';
 import { NodePicker } from './node-picker';
 import { EdgeFields, EMPTY_EDGE } from './edge-fields';
 import { createSanadChainAction } from '@/lib/actions/sanad-actions';
-import { DEFAULT_TRANSMISSION, NewSanadChainSchema, type NodeChoiceInput, type SanadChainInput, type SanadEdgeInput } from '@/lib/validations/sanad';
+import { NewSanadChainSchema, type NodeChoiceInput, type SanadChainInput, type SanadEdgeInput } from '@/lib/validations/sanad';
 import { issuesByPath } from '@/lib/validations/issues';
 import type { TeacherReferenceData } from '@/types/teacher';
 
@@ -31,7 +31,7 @@ export function NewChainForm({
     qiraat_id: '',
     riwayat_id: '',
     tariq_id: '',
-    transmission_method: DEFAULT_TRANSMISSION,
+    transmission_method: '',
     ijazah_date: '',
     ijazah_location: '',
     public_notes: '',

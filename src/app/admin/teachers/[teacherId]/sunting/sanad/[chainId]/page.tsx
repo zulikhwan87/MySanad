@@ -57,8 +57,8 @@ export default async function AdminSanadEditorPage({ params }: { params: { teach
           <CardTitle className="text-lg">Graf rantaian</CardTitle>
           <CardDescription>
             {editable
-              ? 'Klik perawi untuk menambah guru di atasnya, menyambung laluan alternatif, atau menyunting maklumat.'
-              : 'Rantaian dikunci. Tarik balik (jika belum disemak) atau cipta semakan baharu untuk membuat perubahan.'}
+              ? 'Klik perawi untuk menambah guru di atasnya, membetulkan nama, menggantikan atau membuangnya. Klik garis hubungan untuk menyunting kaedah pengambilan.'
+              : 'Rantaian dikunci. Untuk membuat pembetulan, klik "Betulkan sanad" (atau "Tarik balik" jika belum disemak) di atas.'}
           </CardDescription>
         </CardHeader>
         <CardContent>

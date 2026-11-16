@@ -49,3 +49,20 @@ describe('sanad transmitters', () => {
     expect(row.generation_category).toBeNull();
   });
 });
+
+describe('method of receiving', () => {
+  it('may be left empty on a chain and its links', async () => {
+    const uid = await signUp(db, 'guru-kaedah@ujian.test');
+    const q = (await db.query<{ id: string }>(`SELECT id FROM qiraat_types WHERE code = 'Q05-ASIM'`)).rows[0].id;
+    const r = (await db.query<{ id: string }>(`SELECT id FROM riwayat_types WHERE code = 'R-HAFS'`)).rows[0].id;
+    const row = await as(db, 'authenticated', uid, async () => {
+      const t = (await db.query<{ id: string }>(`INSERT INTO teachers (profile_id, full_name_rumi, public_display_name) VALUES ($1, 'Guru Kaedah', 'Guru Kaedah') RETURNING id`, [uid])).rows[0].id;
+      const self = (await db.query<{ n: string }>(`SELECT ensure_my_sanad_node() n`)).rows[0].n;
+      const shaykh = (await db.query<{ id: string }>(`INSERT INTO sanad_nodes (full_name_rumi, full_name_arabic) VALUES ('Syeikh Kaedah', '') RETURNING id`)).rows[0].id;
+      const c = (await db.query<{ id: string; m: string | null }>(`INSERT INTO sanad_chains (teacher_id, title, qiraat_id, riwayat_id) VALUES ($1, 'Sanad', $2, $3) RETURNING id, transmission_method m`, [t, q, r])).rows[0];
+      const e = (await db.query<{ m: string | null }>(`INSERT INTO sanad_edges (sanad_chain_id, source_node_id, target_node_id, transmission_relationship) VALUES ($1, $2, $3, NULL) RETURNING transmission_relationship m`, [c.id, shaykh, self])).rows[0];
+      return { chain: c.m, edge: e.m };
+    });
+    expect(row).toEqual({ chain: null, edge: null });
+  });
+});

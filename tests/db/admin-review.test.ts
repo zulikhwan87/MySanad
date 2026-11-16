@@ -280,6 +280,48 @@ describe('sanad review', () => {
   });
 });
 
+describe('correcting an approved sanad', () => {
+  it('a wrong name is corrected in a revision, re-approved, and replaces the public version', async () => {
+    const t = await submittedTeacher();
+    await asAdmin(`SELECT admin_decide_submission($1, 'publish')`, [t.submission]);
+    const c = await as(db, 'authenticated', t.uid, async () => {
+      const self = (await one<{ n: string }>(`SELECT ensure_my_sanad_node() n`)).n;
+      const chain = (await one<{ id: string }>(`INSERT INTO sanad_chains (teacher_id, title, qiraat_id, riwayat_id) VALUES ($1, 'Sanad Silap', $2, $3) RETURNING id`, [t.id, qiraat, riwayat])).id;
+      const wrong = (await one<{ id: string }>(`INSERT INTO sanad_nodes (full_name_rumi, full_name_arabic) VALUES ('Syeikh Nama Tersilap', '') RETURNING id`)).id;
+      await db.query(`INSERT INTO sanad_edges (sanad_chain_id, source_node_id, target_node_id) VALUES ($1, $2, $3)`, [chain, wrong, self]);
+      const sub = (await one<{ s: string }>(`SELECT submit_my_sanad_chain($1) s`, [chain])).s;
+      return { chain, wrong, self, sub };
+    });
+    await asAdmin(`SELECT admin_decide_submission($1, 'approve')`, [c.sub]);
+
+    // The approved record itself can no longer be edited by the teacher...
+    await as(db, 'authenticated', t.uid, () => db.query(`UPDATE sanad_nodes SET full_name_rumi = 'X' WHERE id = $1`, [c.wrong])).catch(() => null);
+    expect((await one<{ n: string }>(`SELECT full_name_rumi n FROM sanad_nodes WHERE id = $1`, [c.wrong])).n).toBe('Syeikh Nama Tersilap');
+
+    // ...so the correction is made in a revision: a corrected copy is swapped in for this chain only.
+    const rev = await as(db, 'authenticated', t.uid, async () => {
+      const r = (await one<{ r: string }>(`SELECT revise_my_sanad_chain($1) r`, [c.chain])).r;
+      const fixed = (await one<{ id: string }>(`INSERT INTO sanad_nodes (full_name_rumi, full_name_arabic) VALUES ('Syeikh Nama Betul', '') RETURNING id`)).id;
+      await db.query(`UPDATE sanad_edges SET source_node_id = $1 WHERE sanad_chain_id = $2 AND source_node_id = $3`, [fixed, r, c.wrong]);
+      return { id: r, fixed };
+    });
+    const publicNames = async () =>
+      as(db, 'anon', null, async () =>
+        (await one<{ g: { nodes: Array<{ full_name_rumi: string }> } }>(`SELECT get_public_sanad_graph(NULL, $1) g`, [t.id])).g.nodes.map((x) => x.full_name_rumi),
+      );
+    expect(await publicNames()).toContain('Syeikh Nama Tersilap');
+
+    const revSub = await as(db, 'authenticated', t.uid, async () => (await one<{ s: string }>(`SELECT submit_my_sanad_chain($1) s`, [rev.id])).s);
+    expect((await one<{ s: string }>(`SELECT verification_status s FROM sanad_nodes WHERE id = $1`, [rev.fixed])).s).toBe('submitted');
+    await asAdmin(`SELECT admin_decide_submission($1, 'approve')`, [revSub]);
+
+    expect((await one<{ s: string }>(`SELECT verification_status s FROM sanad_nodes WHERE id = $1`, [rev.fixed])).s).toBe('approved');
+    const names = await publicNames();
+    expect(names).toContain('Syeikh Nama Betul');
+    expect(names).not.toContain('Syeikh Nama Tersilap');
+  });
+});
+
 describe('individual items', () => {
   it('only allows the whitelisted tables', async () => {
     await expect(asAdmin(`SELECT admin_set_item_status('profiles', gen_random_uuid(), 'approved')`)).rejects.toThrow(/tidak dibenarkan/);

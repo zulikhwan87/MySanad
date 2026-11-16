@@ -1,10 +1,10 @@
 'use client';
 
 import { SelectField, TextareaField, TextField } from '@/components/forms/fields';
-import { DEFAULT_TRANSMISSION, transmissionOptions, type SanadEdgeInput } from '@/lib/validations/sanad';
+import { transmissionOptions, type SanadEdgeInput } from '@/lib/validations/sanad';
 
 export const EMPTY_EDGE: SanadEdgeInput = {
-  transmission_relationship: DEFAULT_TRANSMISSION,
+  transmission_relationship: '',
   riwayat_context: '',
   transmission_date_text: '',
   transmission_location: '',
@@ -33,7 +33,6 @@ export function EdgeFields({
       <SelectField
         id={`${prefix}rel`}
         label="Kaedah pengambilan"
-        required
         placeholder="Pilih…"
         options={transmissionOptions(value.transmission_relationship)}
         value={str(value.transmission_relationship)}

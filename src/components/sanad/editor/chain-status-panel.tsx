@@ -94,14 +94,24 @@ export function ChainStatusPanel({
         </div>
       ) : null}
       {status === 'submitted' ? (
-        <Button variant="outline" disabled={pending} onClick={() => act(() => withdrawSanadChainAction(chainId))}>
-          <Undo2 aria-hidden /> Tarik balik untuk menyunting
-        </Button>
+        <div className="space-y-2">
+          <Button variant="outline" disabled={pending} onClick={() => act(() => withdrawSanadChainAction(chainId))}>
+            <Undo2 aria-hidden /> Tarik balik untuk menyunting
+          </Button>
+          <p className="text-xs text-muted-foreground">Rantaian sedang menunggu semakan. Tarik balik jika anda perlu membetulkan sesuatu.</p>
+        </div>
       ) : null}
       {status === 'approved' || status === 'published' ? (
-        <Button variant="outline" disabled={pending} onClick={() => act(() => reviseSanadChainAction(chainId), (id) => id && router.push(`${basePath}/${id}`))}>
-          <GitPullRequest aria-hidden /> Cipta semakan baharu
-        </Button>
+        <div className="space-y-2 rounded-xl border bg-secondary/40 p-4">
+          <p className="text-sm font-medium text-forest-900">Ada kesilapan dalam rantaian ini?</p>
+          <p className="text-sm text-muted-foreground">
+            Cipta salinan pembetulan untuk menyunting nama perawi dan hubungan. Versi yang diluluskan kekal dipaparkan sehingga
+            pembetulan diluluskan semula oleh pentadbir.
+          </p>
+          <Button variant="outline" disabled={pending} onClick={() => act(() => reviseSanadChainAction(chainId), (id) => id && router.push(`${basePath}/${id}`))}>
+            {pending ? <Loader2 className="animate-spin" aria-hidden /> : <GitPullRequest aria-hidden />} Betulkan sanad
+          </Button>
+        </div>
       ) : null}
 
       {revisions.length ? (

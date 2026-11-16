@@ -17,7 +17,6 @@ export const TRANSMISSION_RELATIONSHIPS = [
   'Bacaan secara melihat mushaf',
   'Bacaan secara dalam talian (online)',
 ] as const;
-export const DEFAULT_TRANSMISSION = TRANSMISSION_RELATIONSHIPS[0];
 
 /** The two options, plus an older stored value (if any) so editing an old record does not blank it. */
 export function transmissionOptions(current?: unknown) {
@@ -74,7 +73,7 @@ export const SanadNodeSchema = z
   });
 
 export const SanadEdgeSchema = z.object({
-  transmission_relationship: z.string().trim().min(2, 'Nyatakan jenis pengambilan.').max(150),
+  transmission_relationship: text(150),
   riwayat_context: text(200),
   transmission_date_text: text(100),
   transmission_location: text(200),
@@ -93,7 +92,7 @@ export const SanadChainSchema = z.object({
   qiraat_id: z.string({ required_error: 'Qiraat diperlukan.' }).uuid('Qiraat diperlukan.'),
   riwayat_id: z.string({ required_error: 'Riwayat diperlukan.' }).uuid('Riwayat diperlukan.'),
   tariq_id: optionalUuid,
-  transmission_method: z.string().trim().min(3, 'Nyatakan kaedah pengambilan.').max(150),
+  transmission_method: text(150),
   ijazah_date: z.preprocess(
     (v) => (v === '' ? undefined : v),
     z

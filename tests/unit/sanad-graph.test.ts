@@ -160,6 +160,15 @@ describe('sanad schemas', () => {
     expect(future.success).toBe(false);
   });
 
+  it('does not require the method of receiving', () => {
+    const r = NewSanadChainSchema.safeParse({
+      chain: { title: 'Sanad Hafs', qiraat_id: UUID, riwayat_id: UUID, transmission_method: '' },
+      shaykh: { mode: 'existing', node_id: UUID },
+      edge: { transmission_relationship: '' },
+    });
+    expect(r.success && [r.data.chain.transmission_method, r.data.edge.transmission_relationship]).toEqual([undefined, undefined]);
+  });
+
   it('offers the two reading methods, keeping an older stored value visible', () => {
     expect(transmissionOptions().map((o) => o.value)).toEqual([
       'Bacaan secara hafazan (ghaiban)',

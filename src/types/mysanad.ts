@@ -52,7 +52,7 @@ export interface SanadEdgeRecord {
   source_node_id: string;
   target_node_id: string;
   sequence_order: number;
-  transmission_relationship: string;
+  transmission_relationship: string | null;
   riwayat_context: string;
   supporting_evidence: string;
   verification_status: VerificationStatus;
@@ -67,7 +67,7 @@ export interface SanadChainRecord {
   qiraat_rumi: string;
   riwayat_rumi: string;
   tariq_rumi: string;
-  transmission_method: string;
+  transmission_method: string | null;
   immediate_teacher_name_rumi: string;
   immediate_teacher_name_arabic?: string;
   ijazah_date?: string;

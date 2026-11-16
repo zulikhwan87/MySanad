@@ -55,7 +55,7 @@ export default async function AdminChainPage({ params }: { params: { sanadId: st
           </p>
           <p>
             <span className="text-muted-foreground">Kaedah: </span>
-            {chain.transmission_method}
+            {chain.transmission_method || 'Tidak dinyatakan'}
           </p>
           {chain.public_notes ? <p className="whitespace-pre-line">{chain.public_notes}</p> : null}
           {chain.internal_notes ? <p className="whitespace-pre-line text-gold-700">Catatan dalaman: {chain.internal_notes}</p> : null}

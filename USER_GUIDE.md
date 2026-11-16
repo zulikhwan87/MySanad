@@ -22,8 +22,14 @@
 3. Apabila menambah perawi, MySanad memaparkan rekod dengan nama serupa. Pilih rekod sedia ada jika ia orang yang sama;
    MySanad tidak menggabungkan rekod secara automatik.
 4. **Hantar untuk semakan.** Rantaian dikunci selepas dihantar. Tarik balik untuk menyunting sebelum semakan bermula.
-5. Untuk mengubah rantaian yang telah diluluskan, gunakan **Cipta semakan baharu**. Versi yang diluluskan kekal dipaparkan sehingga
-   semakan baharu diluluskan.
+5. **Membetulkan kesilapan.** Dalam editor (rantaian draf atau perlu pembetulan), klik perawi:
+   - **Betulkan nama / maklumat**: jika perawi sudah disahkan, pembetulan disimpan untuk rantaian ini sahaja dan disemak semula;
+   - **Ganti dengan perawi lain**: pindahkan semua hubungannya kepada rekod lain;
+   - **Buang daripada rantaian**: padam hubungannya dalam rantaian ini.
+   Klik garis hubungan untuk menyunting kaedah pengambilan.
+6. Untuk membetulkan rantaian yang telah diluluskan, klik **Betulkan sanad**. Salinan pembetulan dicipta; versi yang diluluskan kekal
+   dipaparkan sehingga pembetulan dihantar dan diluluskan semula oleh pentadbir. Pentadbir boleh melakukan perkara yang sama melalui
+   *Sunting data guru → Sanad*.
 
 ### Dokumen sokongan
 Portal Guru → *Dokumen*. Pilih kategori, kaitkan dengan rekod ijazah atau rantaian sanad jika berkaitan, dan muat naik PDF/JPEG/PNG/WebP

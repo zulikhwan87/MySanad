@@ -45,7 +45,6 @@ export function ChainFields({
       <SelectField
         id="c-method"
         label="Kaedah pengambilan anda"
-        required
         options={transmissionOptions(value.transmission_method)}
         value={str(value.transmission_method)}
         onChange={set('transmission_method')}
